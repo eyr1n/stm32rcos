@@ -151,7 +151,7 @@ private:
   }
 
   static inline void update_rx_message(CANMessage &msg,
-                                       const FDCAN_RxHeaderTypeDef &rx_header) {
+                                       const CAN_RxHeaderTypeDef &rx_header) {
     switch (rx_header.IDE) {
     case CAN_ID_STD:
       msg.id = rx_header.StdId;
