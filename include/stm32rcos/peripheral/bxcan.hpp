@@ -27,11 +27,11 @@ public:
   }
 
   bool stop() {
-    if (HAL_CAN_DeactivateNotification(hcan_, CAN_IT_RX_FIFO0_MSG_PENDING) !=
-        HAL_OK) {
+    if (HAL_CAN_Stop(hcan_) != HAL_OK) {
       return false;
     }
-    return HAL_CAN_Stop(hcan_) == HAL_OK;
+    return HAL_CAN_DeactivateNotification(hcan_, CAN_IT_RX_FIFO0_MSG_PENDING) ==
+           HAL_OK;
   }
 
   bool transmit(const CANMessage &msg) {
@@ -148,6 +148,21 @@ private:
     tx_header.DLC = msg.dlc;
     tx_header.TransmitGlobalTime = DISABLE;
     return tx_header;
+  }
+
+  static inline void update_rx_message(CANMessage &msg,
+                                       const FDCAN_RxHeaderTypeDef &rx_header) {
+    switch (rx_header.IDE) {
+    case CAN_ID_STD:
+      msg.id = rx_header.StdId;
+      msg.ide = false;
+      break;
+    case CAN_ID_EXT:
+      msg.id = rx_header.ExtId;
+      msg.ide = true;
+      break;
+    }
+    msg.dlc = rx_header.DLC;
   }
 
   friend void ::HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan);

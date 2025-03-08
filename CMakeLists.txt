@@ -17,6 +17,7 @@ add_library(${PROJECT_NAME} INTERFACE)
 
 target_sources(${PROJECT_NAME} INTERFACE
   src/bxcan.cpp
+  src/fdcan.cpp
   src/uart.cpp
 )
 

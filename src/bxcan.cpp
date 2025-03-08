@@ -16,18 +16,6 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
 
   while (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header,
                               msg.data.data()) == HAL_OK) {
-    switch (rx_header.IDE) {
-    case CAN_ID_STD:
-      msg.id = rx_header.StdId;
-      msg.ide = false;
-      break;
-    case CAN_ID_EXT:
-      msg.id = rx_header.ExtId;
-      msg.ide = true;
-      break;
-    }
-    msg.dlc = rx_header.DLC;
-
     size_t rx_queue_index =
         BxCAN::filter_index_to_rx_queue_index(hcan, rx_header.FilterMatchIndex);
     if (rx_queue_index >= BxCAN::FILTER_BANK_SIZE) {
@@ -35,6 +23,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan) {
     }
     Queue<CANMessage> *rx_queue = can.rx_queues_[rx_queue_index];
     if (rx_queue) {
+      BxCAN::update_rx_message(msg, rx_header);
       rx_queue->push(msg, 0);
     }
   }
