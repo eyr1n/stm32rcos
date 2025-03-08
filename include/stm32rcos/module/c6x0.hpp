@@ -33,7 +33,7 @@ template <class CAN_> class C6x0;
 template <class CAN_> class C6x0Manager {
 public:
   C6x0Manager(CAN_ &can) : can_{can} {
-    can_.attach_rx_queue({0x200, 0x200, false}, rx_queue_);
+    can_.attach_rx_queue({0x200, 0x7F0, false}, rx_queue_);
   }
 
   ~C6x0Manager() { can_.detach_rx_queue(rx_queue_); }
