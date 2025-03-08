@@ -25,7 +25,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan,
       if (rx_queue_index >= can.std_rx_queues_.size()) {
         continue;
       }
-      Queue<CANMessage> *rx_queue = can.ext_rx_queues_[rx_queue_index];
+      Queue<CANMessage> *rx_queue = can.std_rx_queues_[rx_queue_index];
       if (rx_queue) {
         FDCAN::update_rx_message(msg, rx_header);
         rx_queue->push(msg, 0);
@@ -34,7 +34,7 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan,
       if (rx_queue_index >= can.ext_rx_queues_.size()) {
         continue;
       }
-      Queue<CANMessage> *rx_queue = can.std_rx_queues_[rx_queue_index];
+      Queue<CANMessage> *rx_queue = can.ext_rx_queues_[rx_queue_index];
       if (rx_queue) {
         FDCAN::update_rx_message(msg, rx_header);
         rx_queue->push(msg, 0);
