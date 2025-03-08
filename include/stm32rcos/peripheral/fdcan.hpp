@@ -74,7 +74,7 @@ public:
   }
 
   bool detach_rx_queue(const core::Queue<CANMessage> &queue) {
-    size_t rx_queue_index = find_ext_rx_queue_index(&queue);
+    size_t rx_queue_index = find_std_rx_queue_index(&queue);
     if (rx_queue_index < std_rx_queues_.size()) {
       FDCAN_FilterTypeDef filter_config{};
       filter_config.FilterIndex = rx_queue_index;
