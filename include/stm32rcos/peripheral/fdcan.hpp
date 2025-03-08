@@ -3,9 +3,9 @@
 #include "main.h"
 
 #include <algorithm>
-#include <array>
 #include <cstdint>
 #include <iterator>
+#include <vector>
 
 #include "stm32rcos/core/queue.hpp"
 
@@ -47,50 +47,82 @@ public:
 
   bool attach_rx_queue(const CANFilter &filter,
                        core::Queue<CANMessage> &queue) {
-    size_t rx_queue_index = find_rx_queue_index(nullptr);
-    if (rx_queue_index >= FILTER_BANK_SIZE) {
-      return false;
+    if (filter.ide) {
+      size_t rx_queue_index = find_ext_rx_queue_index(nullptr);
+      if (rx_queue_index >= ext_rx_queues_.size()) {
+        return false;
+      }
+      FDCAN_FilterTypeDef filter_config =
+          create_filter_config(filter, rx_queue_index);
+      if (HAL_FDCAN_ConfigFilter(hfdcan_, &filter_config) != HAL_OK) {
+        return false;
+      }
+      ext_rx_queues_[rx_queue_index] = &queue;
+    } else {
+      size_t rx_queue_index = find_std_rx_queue_index(nullptr);
+      if (rx_queue_index >= std_rx_queues_.size()) {
+        return false;
+      }
+      FDCAN_FilterTypeDef filter_config =
+          create_filter_config(filter, rx_queue_index);
+      if (HAL_FDCAN_ConfigFilter(hfdcan_, &filter_config) != HAL_OK) {
+        return false;
+      }
+      std_rx_queues_[rx_queue_index] = &queue;
     }
-    FDCAN_FilterTypeDef filter_config =
-        create_filter_config(filter, rx_queue_index);
-    if (HAL_FDCAN_ConfigFilter(hfdcan_, &filter_config) != HAL_OK) {
-      return false;
-    }
-    rx_queues_[rx_queue_index] = &queue;
     return true;
   }
 
   bool detach_rx_queue(const core::Queue<CANMessage> &queue) {
-    size_t rx_queue_index = find_rx_queue_index(&queue);
-    if (rx_queue_index >= FILTER_BANK_SIZE) {
-      return false;
+    size_t rx_queue_index = find_ext_rx_queue_index(nullptr);
+    if (rx_queue_index < std_rx_queues_.size()) {
+      FDCAN_FilterTypeDef filter_config{};
+      filter_config.FilterIndex = rx_queue_index;
+      filter_config.FilterConfig = FDCAN_FILTER_DISABLE;
+      if (HAL_FDCAN_ConfigFilter(hfdcan_, &filter_config) != HAL_OK) {
+        return false;
+      }
+      std_rx_queues_[rx_queue_index] = nullptr;
+    } else {
+      rx_queue_index = find_ext_rx_queue_index(nullptr);
+      if (rx_queue_index >= ext_rx_queues_.size()) {
+        return false;
+      }
+      FDCAN_FilterTypeDef filter_config{};
+      filter_config.FilterIndex = rx_queue_index;
+      filter_config.FilterConfig = FDCAN_FILTER_DISABLE;
+      if (HAL_FDCAN_ConfigFilter(hfdcan_, &filter_config) != HAL_OK) {
+        return false;
+      }
+      ext_rx_queues_[rx_queue_index] = nullptr;
     }
-    FDCAN_FilterTypeDef filter_config{};
-    filter_config.FilterIndex = rx_queue_index;
-    filter_config.FilterConfig = FDCAN_FILTER_DISABLE;
-    if (HAL_FDCAN_ConfigFilter(hfdcan_, &filter_config) != HAL_OK) {
-      return false;
-    }
-    rx_queues_[rx_queue_index] = nullptr;
     return true;
   }
 
 private:
-  static constexpr uint32_t FILTER_BANK_SIZE = 64;
-
   FDCAN_HandleTypeDef *hfdcan_;
-  std::array<core::Queue<CANMessage> *, FILTER_BANK_SIZE> rx_queues_{};
+  std::vector<core::Queue<CANMessage> *> std_rx_queues_{};
+  std::vector<core::Queue<CANMessage> *> ext_rx_queues_{};
 
-  FDCAN(FDCAN_HandleTypeDef *hfdcan) : hfdcan_{hfdcan} {}
+  FDCAN(FDCAN_HandleTypeDef *hfdcan)
+      : hfdcan_{hfdcan}, std_rx_queues_(hfdcan_->Init.StdFiltersNbr, nullptr),
+        ext_rx_queues_(hfdcan_->Init.ExtFiltersNbr, nullptr) {}
+
   FDCAN(const FDCAN &) = delete;
   FDCAN &operator=(const FDCAN &) = delete;
   FDCAN(FDCAN &&) = delete;
   FDCAN &operator=(FDCAN &&) = delete;
 
-  size_t find_rx_queue_index(const core::Queue<CANMessage> *queue) {
+  size_t find_std_rx_queue_index(const core::Queue<CANMessage> *queue) {
     return std::distance(
-        rx_queues_.begin(),
-        std::find(rx_queues_.begin(), rx_queues_.end(), queue));
+        std_rx_queues_.begin(),
+        std::find(std_rx_queues_.begin(), std_rx_queues_.end(), queue));
+  }
+
+  size_t find_ext_rx_queue_index(const core::Queue<CANMessage> *queue) {
+    return std::distance(
+        ext_rx_queues_.begin(),
+        std::find(ext_rx_queues_.begin(), ext_rx_queues_.end(), queue));
   }
 
   static inline FDCAN_FilterTypeDef
@@ -156,15 +188,13 @@ private:
     return tx_header;
   }
 
-  static inline void update_rx_message(CANMessage &msg, const FDCAN_RxHeaderTypeDef &rx_header) {
+  static inline void update_rx_message(CANMessage &msg,
+                                       const FDCAN_RxHeaderTypeDef &rx_header) {
     msg.id = rx_header.Identifier;
-    switch (rx_header.IdType) {
-    case FDCAN_STANDARD_ID:
+    if (rx_header.IdType == FDCAN_STANDARD_ID) {
       msg.ide = false;
-      break;
-    case FDCAN_EXTENDED_ID:
+    } else if (rx_header.IdType == FDCAN_EXTENDED_ID) {
       msg.ide = true;
-      break;
     }
     switch (rx_header.DataLength) {
     case FDCAN_DLC_BYTES_0:
