@@ -7,6 +7,7 @@ FetchContent_Declare(Eigen
   GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
   GIT_TAG 3.4.0
 )
+set(BUILD_TESTING OFF)
 FetchContent_MakeAvailable(Eigen)
 
 add_library(${PROJECT_NAME} INTERFACE)
