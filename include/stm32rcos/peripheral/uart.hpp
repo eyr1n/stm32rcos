@@ -117,6 +117,10 @@ private:
   std::function<void(UART &)> abort_callback_;
 
   UART(UART_HandleTypeDef *huart) : huart_{huart} {}
+  UART(const UART &) = delete;
+  UART &operator=(const UART &) = delete;
+  UART(UART &&) = delete;
+  UART &operator=(UART &&) = delete;
 
   static inline UART *&get_stdout_uart() {
     static UART *uart;

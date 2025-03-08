@@ -3,23 +3,27 @@ cmake_minimum_required(VERSION 3.22)
 project(stm32rcos LANGUAGES CXX)
 
 include(FetchContent)
-FetchContent_Declare(Eigen
+FetchContent_Declare(eigen
   GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
   GIT_TAG 3.4.0
+  GIT_SHALLOW TRUE
 )
-set(BUILD_TESTING OFF)
-FetchContent_MakeAvailable(Eigen)
+FetchContent_GetProperties(eigen)
+if(NOT eigen_POPULATED)
+  FetchContent_Populate(eigen)
+endif()
 
 add_library(${PROJECT_NAME} INTERFACE)
-
-target_include_directories(${PROJECT_NAME} INTERFACE include)
 
 target_sources(${PROJECT_NAME} INTERFACE
   src/bxcan.cpp
   src/uart.cpp
 )
 
-target_link_libraries(${PROJECT_NAME} INTERFACE Eigen3::Eigen)
+target_include_directories(${PROJECT_NAME} INTERFACE
+  include
+  ${eigen_SOURCE_DIR}
+)
 
 find_package(Doxygen)
 if(DOXYGEN_FOUND)

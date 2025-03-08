@@ -79,6 +79,10 @@ private:
   std::array<core::Queue<CANMessage> *, FILTER_BANK_SIZE> rx_queues_{};
 
   BxCAN(CAN_HandleTypeDef *hcan) : hcan_{hcan} {}
+  BxCAN(const BxCAN &) = delete;
+  BxCAN &operator=(const BxCAN &) = delete;
+  BxCAN(BxCAN &&) = delete;
+  BxCAN &operator=(BxCAN &&) = delete;
 
   size_t find_rx_queue_index(const core::Queue<CANMessage> *queue) {
     return std::distance(

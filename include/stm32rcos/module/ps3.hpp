@@ -11,72 +11,32 @@
 namespace stm32rcos {
 namespace module {
 
-/**
- * @code{.cpp}
- * #include <cstdio>
- * #include <tutrcos.hpp>
- * #include <tutrcos/module/ps3.hpp>
- *
- * extern UART_HandleTypeDef huart1;
- * extern UART_HandleTypeDef huart2;
- *
- * extern "C" void main_thread(void *) {
- *   using namespace tutrcos::core;
- *   using namespace tutrcos::peripheral;
- *   using namespace tutrcos::module;
- *
- *   UART uart2(&huart2); // デバッグ出力用
- *   uart2.enable_stdout();
- *
- *   UART uart1(&huart1);
- *   PS3 ps3(uart1);
- *
- *   while (true) {
- *     ps3.update();
- *
- *     // DualShock 左スティックのx, y座標を出力
- *     printf("%f %f\r\n", ps3.get_axis(PS3::Axis::LEFT_X),
- *            ps3.get_axis(PS3::Axis::LEFT_Y));
- *
- *     if (ps3.get_key_down(PS3::Key::CIRCLE)) {
- *       printf("O ボタンが押されたよ\r\n");
- *     }
- *
- *     if (ps3.get_key_up(PS3::Key::CIRCLE)) {
- *       printf("O ボタンが離されたよ\r\n");
- *     }
- *
- *     Thread::delay(10);
- *   }
- * }
- * @endcode
- */
+enum class PS3Axis {
+  LEFT_X,
+  LEFT_Y,
+  RIGHT_X,
+  RIGHT_Y,
+};
+
+enum class PS3Key {
+  UP,
+  DOWN,
+  RIGHT,
+  LEFT,
+  TRIANGLE,
+  CROSS,
+  CIRCLE,
+  SQUARE = 8,
+  L1,
+  L2,
+  R1,
+  R2,
+  START,
+  SELECT,
+};
+
 class PS3 {
 public:
-  enum class Axis {
-    LEFT_X,
-    LEFT_Y,
-    RIGHT_X,
-    RIGHT_Y,
-  };
-
-  enum class Key {
-    UP,
-    DOWN,
-    RIGHT,
-    LEFT,
-    TRIANGLE,
-    CROSS,
-    CIRCLE,
-    SQUARE = 8,
-    L1,
-    L2,
-    R1,
-    R2,
-    START,
-    SELECT,
-  };
-
   PS3(peripheral::UART &uart) : uart_{uart} {
     uart_.attach_rx_callback([this](peripheral::UART &uart) {
       rx_queue_.push(rx_buf_, 0);
@@ -116,22 +76,23 @@ public:
     }
   }
 
-  float get_axis(Axis axis) {
-    return axes_[static_cast<std::underlying_type_t<Axis>>(axis)];
+  float get_axis(PS3Axis axis) {
+    return axes_[static_cast<std::underlying_type_t<PS3Axis>>(axis)];
   }
 
-  bool get_key(Key key) {
-    return (keys_ & (1 << static_cast<std::underlying_type_t<Key>>(key))) != 0;
+  bool get_key(PS3Key key) {
+    return (keys_ & (1 << static_cast<std::underlying_type_t<PS3Key>>(key))) !=
+           0;
   }
 
-  bool get_key_down(Key key) {
+  bool get_key_down(PS3Key key) {
     return ((keys_ ^ keys_prev_) & keys_ &
-            (1 << static_cast<std::underlying_type_t<Key>>(key))) != 0;
+            (1 << static_cast<std::underlying_type_t<PS3Key>>(key))) != 0;
   }
 
-  bool get_key_up(Key key) {
+  bool get_key_up(PS3Key key) {
     return ((keys_ ^ keys_prev_) & keys_prev_ &
-            (1 << static_cast<std::underlying_type_t<Key>>(key))) != 0;
+            (1 << static_cast<std::underlying_type_t<PS3Key>>(key))) != 0;
   }
 
 private:

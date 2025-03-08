@@ -106,13 +106,9 @@ public:
         nullptr;
   }
 
-  float get_rps() override {
-    return get_rpm() / 60;
-  }
+  float get_rps() override { return get_rpm() / 60; }
 
-  float get_rpm() override {
-    return rpm_;
-  }
+  float get_rpm() override { return rpm_; }
 
   int16_t get_current() {
     switch (type_) {
@@ -143,6 +139,8 @@ private:
   int16_t rpm_ = 0;
   int16_t current_ = 0;
   int16_t target_current_ = 0;
+
+  friend C6x0Manager<CAN_>;
 };
 
 } // namespace module
