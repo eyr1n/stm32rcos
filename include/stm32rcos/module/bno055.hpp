@@ -17,15 +17,26 @@ namespace module {
 class BNO055 {
 public:
   BNO055(peripheral::UART &uart) : uart_{uart} {
-    uart_.attach_tx_callback([this](peripheral::UART &) { tx_sem_.release(); });
-    uart_.attach_rx_callback([this](peripheral::UART &uart) {
-      rx_queue_.push(rx_buf_, 0);
-      uart.receive_it(&rx_buf_, 1);
-    });
-    uart_.attach_abort_callback([this](peripheral::UART &uart) {
-      tx_sem_.release();
-      uart.receive_it(&rx_buf_, 1);
-    });
+    uart_.attach_tx_callback(
+        [](void *args) {
+          auto bno055 = reinterpret_cast<BNO055 *>(args);
+          bno055->tx_sem_.release();
+        },
+        this);
+    uart_.attach_rx_callback(
+        [](void *args) {
+          auto bno055 = reinterpret_cast<BNO055 *>(args);
+          bno055->rx_queue_.push(bno055->rx_buf_, 0);
+          bno055->uart_.receive_it(&bno055->rx_buf_, 1);
+        },
+        this);
+    uart_.attach_abort_callback(
+        [](void *args) {
+          auto bno055 = reinterpret_cast<BNO055 *>(args);
+          bno055->tx_sem_.release();
+          bno055->uart_.receive_it(&bno055->rx_buf_, 1);
+        },
+        this);
     uart_.receive_it(&rx_buf_, 1);
   }
 

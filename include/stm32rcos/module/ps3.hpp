@@ -38,12 +38,19 @@ enum class PS3Key {
 class PS3 {
 public:
   PS3(peripheral::UART &uart) : uart_{uart} {
-    uart_.attach_rx_callback([this](peripheral::UART &uart) {
-      rx_queue_.push(rx_buf_, 0);
-      uart.receive_it(&rx_buf_, 1);
-    });
+    uart_.attach_rx_callback(
+        [](void *args) {
+          auto ps3 = reinterpret_cast<PS3 *>(args);
+          ps3->rx_queue_.push(ps3->rx_buf_, 0);
+          ps3->uart_.receive_it(&ps3->rx_buf_, 1);
+        },
+        this);
     uart_.attach_abort_callback(
-        [this](peripheral::UART &uart) { uart.receive_it(&rx_buf_, 1); });
+        [](void *args) {
+          auto ps3 = reinterpret_cast<PS3 *>(args);
+          ps3->uart_.receive_it(&ps3->rx_buf_, 1);
+        },
+        this);
     uart_.receive_it(&rx_buf_, 1);
   }
 

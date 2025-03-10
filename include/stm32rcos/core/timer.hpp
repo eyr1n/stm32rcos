@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <type_traits>
 
@@ -19,12 +18,11 @@ private:
   using TimerId = std::unique_ptr<std::remove_pointer_t<osTimerId_t>, Deleter>;
 
 public:
-  Timer(std::function<void()> &&func, osTimerType_t type,
-        uint32_t attr_bits = 0)
-      : func_{std::move(func)} {
+  Timer(void (*func)(void *), void *args, osTimerType_t type,
+        uint32_t attr_bits = 0) {
     osTimerAttr_t attr{};
     attr.attr_bits = attr_bits;
-    timer_id_ = TimerId{osTimerNew(func_internal, type, this, &attr)};
+    timer_id_ = TimerId{osTimerNew(func, type, args, &attr)};
   }
 
   bool start(uint32_t ticks) {
@@ -37,11 +35,6 @@ public:
 
 private:
   TimerId timer_id_;
-  std::function<void()> func_;
-
-  static inline void func_internal(void *timer) {
-    reinterpret_cast<stm32rcos::core::Timer *>(timer)->func_();
-  }
 };
 
 } // namespace core

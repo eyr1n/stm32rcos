@@ -2,7 +2,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <type_traits>
 
@@ -21,14 +20,13 @@ private:
       std::unique_ptr<std::remove_pointer_t<osThreadId_t>, Deleter>;
 
 public:
-  Thread(std::function<void()> &&func, size_t stack_size, osPriority_t priority,
-         uint32_t attr_bits = 0)
-      : func_{std::move(func)} {
+  Thread(void (*func)(void *), void *args, size_t stack_size,
+         osPriority_t priority, uint32_t attr_bits = 0) {
     osThreadAttr_t attr{};
     attr.stack_size = stack_size;
     attr.priority = priority;
     attr.attr_bits = attr_bits;
-    thread_id_ = ThreadId{osThreadNew(func_internal, this, &attr)};
+    thread_id_ = ThreadId{osThreadNew(func, args, &attr)};
   }
 
   bool detach() { return osThreadDetach(thread_id_.get()) == osOK; }
@@ -37,12 +35,6 @@ public:
 
 private:
   ThreadId thread_id_;
-  std::function<void()> func_;
-
-  static inline void func_internal(void *thread) {
-    reinterpret_cast<stm32rcos::core::Thread *>(thread)->func_();
-    osThreadExit();
-  }
 };
 
 } // namespace core

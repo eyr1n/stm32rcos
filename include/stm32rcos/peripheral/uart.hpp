@@ -5,7 +5,6 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <utility>
 
 #include "stm32rcos/core/mutex.hpp"
@@ -46,27 +45,30 @@ public:
 
   bool abort() { return HAL_UART_Abort_IT(huart_) == HAL_OK; }
 
-  bool attach_tx_callback(std::function<void(UART &)> &&callback) {
+  bool attach_tx_callback(void (*callback)(void *), void *args) {
     if (tx_callback_) {
       return false;
     }
-    tx_callback_ = std::move(callback);
+    tx_callback_ = callback;
+    tx_args_ = args;
     return true;
   }
 
-  bool attach_rx_callback(std::function<void(UART &)> &&callback) {
+  bool attach_rx_callback(void (*callback)(void *), void *args) {
     if (rx_callback_) {
       return false;
     }
-    rx_callback_ = std::move(callback);
+    rx_callback_ = callback;
+    rx_args_ = args;
     return true;
   }
 
-  bool attach_abort_callback(std::function<void(UART &)> &&callback) {
+  bool attach_abort_callback(void (*callback)(void *), void *args) {
     if (abort_callback_) {
       return false;
     }
-    abort_callback_ = std::move(callback);
+    abort_callback_ = callback;
+    abort_args_ = args;
     return true;
   }
 
@@ -74,7 +76,8 @@ public:
     if (!tx_callback_) {
       return false;
     }
-    tx_callback_ = std::function<void(UART &)>{};
+    tx_callback_ = nullptr;
+    tx_args_ = nullptr;
     return true;
   }
 
@@ -82,7 +85,8 @@ public:
     if (!rx_callback_) {
       return false;
     }
-    rx_callback_ = std::function<void(UART &)>{};
+    rx_callback_ = nullptr;
+    rx_args_ = nullptr;
     return true;
   }
 
@@ -90,7 +94,8 @@ public:
     if (!abort_callback_) {
       return false;
     }
-    abort_callback_ = std::function<void(UART &)>{};
+    abort_callback_ = nullptr;
+    abort_args_ = nullptr;
     return true;
   }
 
@@ -112,9 +117,12 @@ public:
 
 private:
   UART_HandleTypeDef *huart_;
-  std::function<void(UART &)> tx_callback_;
-  std::function<void(UART &)> rx_callback_;
-  std::function<void(UART &)> abort_callback_;
+  void (*tx_callback_)(void *);
+  void *tx_args_;
+  void (*rx_callback_)(void *);
+  void *rx_args_;
+  void (*abort_callback_)(void *);
+  void *abort_args_;
 
   UART(UART_HandleTypeDef *huart) : huart_{huart} {}
   UART(const UART &) = delete;
