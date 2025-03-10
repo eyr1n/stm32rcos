@@ -6,6 +6,8 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "stm32rcos/core/queue.hpp"
+#include "stm32rcos/core/semaphore.hpp"
 #include "stm32rcos/peripheral/uart.hpp"
 
 #include "encoder_base.hpp"
@@ -73,7 +75,8 @@ enum class STS3215Mode {
  */
 class STS3215 : public EncoderBase {
 public:
-  STS3215(peripheral::UART &uart, STS3215WorkMode workmode, uint8_t id, STS3215Mode mode)
+  STS3215(peripheral::UART &uart, STS3215WorkMode workmode, uint8_t id,
+          STS3215Mode mode)
       : EncoderBase{ppr_}, uart_{uart}, workmode_{workmode}, id_{id},
         mode_{mode} {
     uart_.attach_tx_callback(
@@ -176,7 +179,7 @@ public:
 
 private:
   peripheral::UART &uart_;
-  core::Semaphore tx_sem_{1, 1};
+  core::Semaphore tx_sem_{1, 0};
   core::Queue<uint8_t> rx_queue_{64};
   uint8_t rx_buf_;
 
@@ -195,8 +198,10 @@ private:
       checksum += tx[i];
     }
     tx.emplace_back(~checksum);
-    tx_sem_.try_acquire(1);
-    return uart_.transmit_it(tx.data(), size + 5);
+    if (!uart_.transmit_it(tx.data(), size + 5)) {
+      return false;
+    }
+    return tx_sem_.try_acquire(1);
   }
 };
 
