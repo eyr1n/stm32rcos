@@ -4,6 +4,8 @@
 #include <cmath>
 #include <cstdint>
 
+#include <cmsis_os2.h>
+
 namespace stm32rcos {
 namespace module {
 

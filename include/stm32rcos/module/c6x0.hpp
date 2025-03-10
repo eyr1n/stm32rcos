@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <type_traits>
 
+#include "stm32rcos/core/queue.hpp"
 #include "stm32rcos/peripheral/can.hpp"
 
 #include "encoder_base.hpp"

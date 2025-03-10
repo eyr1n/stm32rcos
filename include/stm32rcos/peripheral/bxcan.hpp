@@ -109,17 +109,6 @@ private:
     return rx_queue_index;
   }
 
-  static inline size_t
-  filter_index_to_rx_queue_index(const CAN_HandleTypeDef *hcan,
-                                 uint32_t filter_index) {
-#ifdef CAN2
-    if (hcan->Instance == CAN2) {
-      return filter_index - FILTER_BANK_SIZE;
-    }
-#endif
-    return filter_index;
-  }
-
   static inline CAN_FilterTypeDef create_filter_config(const CANFilter &filter,
                                                        uint32_t filter_index) {
     CAN_FilterTypeDef filter_config{};
