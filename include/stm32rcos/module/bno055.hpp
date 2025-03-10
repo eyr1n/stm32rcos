@@ -80,7 +80,7 @@ public:
 
 private:
   peripheral::UART &uart_;
-  core::Semaphore tx_sem_{1, 1};
+  core::Semaphore tx_sem_{1, 0};
   core::Queue<uint8_t> rx_queue_{64};
   uint8_t rx_buf_;
 
@@ -91,12 +91,16 @@ private:
   bool write_reg(uint8_t addr, uint8_t *data, uint8_t size) {
     std::array<uint8_t, 4> buf{0xAA, 0x00, addr, size};
     rx_queue_.clear();
-    tx_sem_.try_acquire(5);
     if (!uart_.transmit_it(buf.data(), 4)) {
       return false;
     }
-    tx_sem_.try_acquire(5);
+    if (!tx_sem_.try_acquire(5)) {
+      return false;
+    }
     if (!uart_.transmit_it(data, size)) {
+      return false;
+    }
+    if (!tx_sem_.try_acquire(5)) {
       return false;
     }
     for (size_t i = 0; i < 2; ++i) {
@@ -110,8 +114,10 @@ private:
   bool read_reg(uint8_t addr, uint8_t *data, uint8_t size) {
     std::array<uint8_t, 4> buf{0xAA, 0x01, addr, size};
     rx_queue_.clear();
-    tx_sem_.try_acquire(5);
     if (!uart_.transmit_it(buf.data(), 4)) {
+      return false;
+    }
+    if (!tx_sem_.try_acquire(5)) {
       return false;
     }
     for (size_t i = 0; i < 2; ++i) {
