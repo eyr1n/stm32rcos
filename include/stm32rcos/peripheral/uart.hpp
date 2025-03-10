@@ -46,7 +46,7 @@ public:
   bool abort() { return HAL_UART_Abort_IT(huart_) == HAL_OK; }
 
   bool attach_tx_callback(void (*callback)(void *), void *args) {
-    if (tx_callback_) {
+    if (tx_callback_ || tx_args_) {
       return false;
     }
     tx_callback_ = callback;
@@ -55,7 +55,7 @@ public:
   }
 
   bool attach_rx_callback(void (*callback)(void *), void *args) {
-    if (rx_callback_) {
+    if (rx_callback_ || rx_args_) {
       return false;
     }
     rx_callback_ = callback;
@@ -64,7 +64,7 @@ public:
   }
 
   bool attach_abort_callback(void (*callback)(void *), void *args) {
-    if (abort_callback_) {
+    if (abort_callback_ || abort_args_) {
       return false;
     }
     abort_callback_ = callback;
@@ -73,7 +73,7 @@ public:
   }
 
   bool detach_tx_callback() {
-    if (!tx_callback_) {
+    if (!tx_callback_ || !tx_args_) {
       return false;
     }
     tx_callback_ = nullptr;
@@ -82,7 +82,7 @@ public:
   }
 
   bool detach_rx_callback() {
-    if (!rx_callback_) {
+    if (!rx_callback_ || !rx_args_) {
       return false;
     }
     rx_callback_ = nullptr;
@@ -91,7 +91,7 @@ public:
   }
 
   bool detach_abort_callback() {
-    if (!abort_callback_) {
+    if (!abort_callback_ || !abort_args_) {
       return false;
     }
     abort_callback_ = nullptr;
