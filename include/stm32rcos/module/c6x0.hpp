@@ -71,7 +71,7 @@ public:
         msg.data[i * 2 + 1] = motors_[i]->target_current_;
       }
     }
-    if (!can_.transmit(msg)) {
+    if (!can_.transmit(msg, 5)) {
       return false;
     }
 
@@ -83,7 +83,7 @@ public:
         msg.data[i * 2 + 1] = motors_[i + 4]->target_current_;
       }
     }
-    return can_.transmit(msg);
+    return can_.transmit(msg, 5);
   }
 
 private:

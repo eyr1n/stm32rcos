@@ -39,10 +39,18 @@ public:
                hfdcan_, FDCAN_IT_RX_FIFO0_NEW_MESSAGE) == HAL_OK;
   }
 
-  bool transmit(const CANMessage &msg) {
+  bool transmit(const CANMessage &msg, uint32_t timeout) {
     FDCAN_TxHeaderTypeDef tx_header = create_tx_header(msg);
-    return HAL_FDCAN_AddMessageToTxFifoQ(hfdcan_, &tx_header,
-                                         msg.data.data()) == HAL_OK;
+    uint32_t start = osKernelGetTickCount();
+    while (HAL_FDCAN_AddMessageToTxFifoQ(hfdcan_, &tx_header,
+                                         msg.data.data()) != HAL_OK) {
+      uint32_t elapsed = osKernelGetTickCount() - start;
+      if (elapsed >= timeout) {
+        return false;
+      }
+      osDelay(1);
+    }
+    return true;
   }
 
   bool attach_rx_queue(const CANFilter &filter,

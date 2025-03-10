@@ -34,11 +34,19 @@ public:
            HAL_OK;
   }
 
-  bool transmit(const CANMessage &msg) {
+  bool transmit(const CANMessage &msg, uint32_t timeout) {
     CAN_TxHeaderTypeDef tx_header = create_tx_header(msg);
     uint32_t tx_mailbox;
-    return HAL_CAN_AddTxMessage(hcan_, &tx_header, msg.data.data(),
-                                &tx_mailbox) == HAL_OK;
+    uint32_t start = osKernelGetTickCount();
+    while (HAL_CAN_AddTxMessage(hcan_, &tx_header, msg.data.data(),
+                                &tx_mailbox) != HAL_OK) {
+      uint32_t elapsed = osKernelGetTickCount() - start;
+      if (elapsed >= timeout) {
+        return false;
+      }
+      osDelay(1);
+    }
+    return true;
   }
 
   bool attach_rx_queue(const CANFilter &filter,
