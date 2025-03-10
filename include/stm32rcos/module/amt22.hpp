@@ -78,6 +78,7 @@ private:
   SPI_HandleTypeDef *hspi_;
   GPIO_TypeDef *cs_port_;
   uint16_t cs_pin_;
+
   AMT22Resolution resolution_;
   AMT22Mode mode_;
   int16_t prev_count_ = 0;
