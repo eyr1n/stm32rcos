@@ -54,10 +54,6 @@ public:
       if (!write_reg(0x3D, &data, 1)) {
         continue;
       }
-      data = 0x04;
-      if (!write_reg(0x3B, &data, 1)) {
-        continue;
-      }
       data = 0x08;
       if (!write_reg(0x3D, &data, 1)) {
         continue;
