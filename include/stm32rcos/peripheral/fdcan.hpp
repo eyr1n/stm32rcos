@@ -151,7 +151,6 @@ private:
 
   static inline FDCAN_TxHeaderTypeDef create_tx_header(const CANMessage &msg) {
     FDCAN_TxHeaderTypeDef tx_header{};
-
     tx_header.Identifier = msg.id;
     if (msg.ide) {
       tx_header.IdType = FDCAN_EXTENDED_ID;
