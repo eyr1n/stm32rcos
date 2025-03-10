@@ -115,7 +115,7 @@ public:
             CybergearTurnMode turnmode = CybergearTurnMode::MULTI_TURN)
       : EncoderBase(1 << 14), can_{can}, motor_id_{motor_id},
         master_id_{master_id}, turnmode_{turnmode} {
-    can_.attach_rx_queue({0x200, 0x7F0, false}, rx_queue_);
+    can_.attach_rx_queue({0, 0, true}, rx_queue_);
   }
 
   ~Cybergear() { can_.detach_rx_queue(rx_queue_); }
