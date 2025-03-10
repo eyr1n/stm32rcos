@@ -5,6 +5,8 @@
 #include <cstddef>
 #include <cstdint>
 
+#include <Eigen/Geometry>
+
 #include "stm32rcos/core/queue.hpp"
 #include "stm32rcos/core/semaphore.hpp"
 #include "stm32rcos/peripheral/uart.hpp"
@@ -67,62 +69,18 @@ public:
 
   bool update() {
     std::array<int16_t, 4> data;
-    if (!read_reg(0x1A, reinterpret_cast<uint8_t *>(data.data()), 6)) {
-      return false;
-    }
-    euler_x_orig_ = data[0] / 900.0f;
-    euler_y_orig_ = data[1] / 900.0f;
-    euler_z_orig_ = data[2] / 900.0f;
-
-    euler_x_ = normalize_angle(euler_x_orig_ - euler_x_offset_);
-    euler_y_ = normalize_angle(euler_y_orig_ - euler_y_offset_);
-    euler_z_ = normalize_angle(euler_z_orig_ - euler_z_offset_);
-
     if (!read_reg(0x20, reinterpret_cast<uint8_t *>(data.data()), 8)) {
       return false;
     }
-    quat_w_orig_ = data[0] / 16384.0f;
-    quat_x_orig_ = data[1] / 16384.0f;
-    quat_y_orig_ = data[2] / 16384.0f;
-    quat_z_orig_ = data[3] / 16384.0f;
-
-    quat_w_ = quat_w_orig_ * quat_w_offset_ - quat_x_orig_ * quat_x_offset_ -
-              quat_y_orig_ * quat_y_offset_ - quat_z_orig_ * quat_z_offset_;
-    quat_x_ = quat_w_orig_ * quat_x_offset_ + quat_x_orig_ * quat_w_offset_ +
-              quat_y_orig_ * quat_z_offset_ - quat_z_orig_ * quat_y_offset_;
-    quat_y_ = quat_w_orig_ * quat_y_offset_ - quat_x_orig_ * quat_z_offset_ +
-              quat_y_orig_ * quat_w_offset_ + quat_z_orig_ * quat_x_offset_;
-    quat_z_ = quat_w_orig_ * quat_z_offset_ + quat_x_orig_ * quat_y_offset_ -
-              quat_y_orig_ * quat_x_offset_ + quat_z_orig_ * quat_w_offset_;
+    quat_orig_ = Eigen::Quaternionf{data[0] / 16384.0f, data[1] / 16384.0f,
+                                    data[2] / 16384.0f, data[3] / 16384.0f};
+    quat_ = quat_orig_ * quat_offset_;
     return true;
   }
 
-  void reset_euler() {
-    euler_x_offset_ = euler_x_orig_;
-    euler_y_offset_ = euler_y_orig_;
-    euler_z_offset_ = euler_z_orig_;
-  }
+  void reset() { quat_offset_ = quat_orig_; }
 
-  void reset_quat() {
-    quat_w_offset_ = -quat_w_orig_;
-    quat_x_offset_ = quat_x_orig_;
-    quat_y_offset_ = quat_y_orig_;
-    quat_z_offset_ = quat_z_orig_;
-  }
-
-  float get_euler_x() { return euler_x_; }
-
-  float get_euler_y() { return euler_y_; }
-
-  float get_euler_z() { return euler_z_; }
-
-  float get_quat_w() { return quat_w_; }
-
-  float get_quat_x() { return quat_x_; }
-
-  float get_quat_y() { return quat_y_; }
-
-  float get_quat_z() { return quat_z_; }
+  const Eigen::Quaternionf &get_quaternion() { return quat_; }
 
 private:
   peripheral::UART &uart_;
@@ -130,32 +88,9 @@ private:
   core::Queue<uint8_t> rx_queue_{64};
   uint8_t rx_buf_;
 
-  float euler_x_orig_ = 0;
-  float euler_y_orig_ = 0;
-  float euler_z_orig_ = 0;
-
-  float euler_x_offset_ = 0;
-  float euler_y_offset_ = 0;
-  float euler_z_offset_ = 0;
-
-  float euler_x_ = 0;
-  float euler_y_ = 0;
-  float euler_z_ = 0;
-
-  float quat_w_orig_ = 1;
-  float quat_x_orig_ = 0;
-  float quat_y_orig_ = 0;
-  float quat_z_orig_ = 0;
-
-  float quat_w_offset_ = -1;
-  float quat_x_offset_ = 0;
-  float quat_y_offset_ = 0;
-  float quat_z_offset_ = 0;
-
-  float quat_w_ = 1;
-  float quat_x_ = 0;
-  float quat_y_ = 0;
-  float quat_z_ = 0;
+  Eigen::Quaternionf quat_orig_{Eigen::Quaternionf::Identity()};
+  Eigen::Quaternionf quat_offset_{Eigen::Quaternionf::Identity()};
+  Eigen::Quaternionf quat_{Eigen::Quaternionf::Identity()};
 
   bool write_reg(uint8_t addr, uint8_t *data, uint8_t size) {
     std::array<uint8_t, 4> buf{0xAA, 0x00, addr, size};
@@ -197,14 +132,6 @@ private:
       }
     }
     return true;
-  }
-
-  float normalize_angle(float angle) {
-    float res = fmod(angle, 2.0f * M_PI);
-    if (res < 0) {
-      return res + 2.0f * M_PI;
-    }
-    return res;
   }
 };
 
