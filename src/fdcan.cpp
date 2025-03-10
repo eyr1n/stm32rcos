@@ -20,21 +20,20 @@ void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan,
     if (rx_header.IsFilterMatchingFrame == 1) {
       continue;
     }
-    size_t rx_queue_index = rx_header.FilterIndex;
     if (rx_header.IdType == FDCAN_STANDARD_ID) {
-      if (rx_queue_index >= can.std_rx_queues_.size()) {
+      if (rx_header.FilterIndex >= can.std_rx_queues_.size()) {
         continue;
       }
-      Queue<CANMessage> *rx_queue = can.std_rx_queues_[rx_queue_index];
+      Queue<CANMessage> *rx_queue = can.std_rx_queues_[rx_header.FilterIndex];
       if (rx_queue) {
         FDCAN::update_rx_message(msg, rx_header);
         rx_queue->push(msg, 0);
       }
     } else if (rx_header.IdType == FDCAN_EXTENDED_ID) {
-      if (rx_queue_index >= can.ext_rx_queues_.size()) {
+      if (rx_header.FilterIndex >= can.ext_rx_queues_.size()) {
         continue;
       }
-      Queue<CANMessage> *rx_queue = can.ext_rx_queues_[rx_queue_index];
+      Queue<CANMessage> *rx_queue = can.ext_rx_queues_[rx_header.FilterIndex];
       if (rx_queue) {
         FDCAN::update_rx_message(msg, rx_header);
         rx_queue->push(msg, 0);
