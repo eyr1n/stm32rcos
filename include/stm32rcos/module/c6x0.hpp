@@ -38,7 +38,7 @@ public:
 
   ~C6x0Manager() { can_.detach_rx_queue(rx_queue_); }
 
-  bool update() {
+  void update() {
     peripheral::CANMessage msg;
     while (rx_queue_.pop(msg, 0)) {
       if (msg.id >= 0x201 && msg.id < 0x201 + 8) {
@@ -60,8 +60,10 @@ public:
         }
       }
     }
+  }
 
-    msg.data.fill(0);
+  bool transmit() {
+    peripheral::CANMessage msg{};
     msg.ide = false;
     msg.id = 0x200;
     msg.dlc = 8;
@@ -74,7 +76,6 @@ public:
     if (!can_.transmit(msg, 5)) {
       return false;
     }
-
     msg.data.fill(0);
     msg.id = 0x1FF;
     for (size_t i = 0; i < 4; ++i) {
