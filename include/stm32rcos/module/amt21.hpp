@@ -108,7 +108,6 @@ private:
 
   bool send_command(uint8_t command, uint8_t *response) {
     uint8_t data = address_ | command;
-    uart_.abort();
     if (!uart_.receive_dma(reinterpret_cast<uint8_t *>(response), 2)) {
       return false;
     }
