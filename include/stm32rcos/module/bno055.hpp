@@ -47,7 +47,7 @@ public:
     uart_.detach_abort_callback();
   }
 
-  bool init(uint32_t timeout) {
+  bool start(uint32_t timeout) {
     uint32_t start = osKernelGetTickCount();
     while (osKernelGetTickCount() - start < timeout) {
       uint8_t data = 0x00;

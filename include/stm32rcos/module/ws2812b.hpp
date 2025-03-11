@@ -3,6 +3,7 @@
 #include "main.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
@@ -67,26 +68,25 @@ inline RGB to_rgb(const HSV &hsv) {
 // 0.85us = 16カウント
 class WS2812B {
 public:
-  WS2812B(TIM_HandleTypeDef *handle, uint32_t ch, size_t led_cnt)
-      : handle_(handle), ch_(ch), led_cnt_(led_cnt) {
-    buf_.resize(RESET_SIZE + led_cnt_ * 24);
-
-    // set to 0
-    for (size_t i = 0; i < buf_.size(); i++) {
-      buf_[i] = 0;
-    }
+  WS2812B(TIM_HandleTypeDef *htim, uint32_t channel, size_t size)
+      : htim_{htim}, channel_{channel}, rgbs_(size, RGB{}),
+        buf_(RESET_SIZE + size * 24, 0) {
+    HAL_TIM_PWM_Start_DMA(htim_, channel_,
+                          reinterpret_cast<uint32_t *>(buf_.data()),
+                          buf_.size());
   }
 
-  void write_rgb(size_t index, const RGB &rgb) {
-    uint8_t r_byte, g_byte, b_byte;
+  ~WS2812B() { HAL_TIM_PWM_Stop_DMA(htim_, channel_); }
 
+  void set_rgb(size_t index, const RGB &rgb) {
     float R = std::clamp(rgb.r, 0.0f, 1.0f);
     float G = std::clamp(rgb.g, 0.0f, 1.0f);
     float B = std::clamp(rgb.b, 0.0f, 1.0f);
-    r_byte = R * 255.0f;
-    g_byte = G * 255.0f;
-    b_byte = B * 255.0f;
+    uint8_t r_byte = R * 255.0f;
+    uint8_t g_byte = G * 255.0f;
+    uint8_t b_byte = B * 255.0f;
 
+    __disable_irq();
     // G
     size_t offset = RESET_SIZE + index * 24;
     for (size_t i = 0; i < 8; i++) {
@@ -96,7 +96,7 @@ public:
         buf_[offset + i] = BIT_ZERO;
       }
     }
-    // B
+    // R
     for (size_t i = 0; i < 8; i++) {
       if (r_byte & (1 << (7 - i))) {
         buf_[offset + 8 + i] = BIT_ONE;
@@ -112,29 +112,26 @@ public:
         buf_[offset + 16 + i] = BIT_ZERO;
       }
     }
+    __enable_irq();
   }
 
-  void write_rgb_all(const RGB &rgb) {
-    for (size_t i = 0; i < led_cnt_; i++) {
-      write_rgb(i, rgb);
+  void set_rgb_all(const RGB &rgb) {
+    for (size_t i = 0; i < rgbs_.size(); i++) {
+      set_rgb(i, rgb);
     }
   }
 
-  void update() {
-    HAL_TIM_PWM_Start_DMA(handle_, ch_, (uint32_t *)buf_.data(),
-                          RESET_SIZE + led_cnt_ * 24);
-  }
-
-  size_t led_count() const { return led_cnt_; }
+  size_t size() { return rgbs_.size(); }
 
 private:
-  TIM_HandleTypeDef *handle_;
-  uint32_t ch_;
-  std::vector<uint32_t> buf_;
   static constexpr size_t RESET_SIZE = 50;
   static constexpr uint8_t BIT_ONE = 16;
   static constexpr uint8_t BIT_ZERO = 8;
-  const size_t led_cnt_;
+
+  TIM_HandleTypeDef *htim_;
+  uint32_t channel_;
+  std::vector<RGB> rgbs_;
+  std::vector<uint32_t> buf_;
 };
 
 } // namespace module
