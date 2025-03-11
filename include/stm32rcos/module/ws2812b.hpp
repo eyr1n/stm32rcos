@@ -2,7 +2,7 @@
 
 #include "main.h"
 
-#include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <vector>
@@ -23,46 +23,29 @@ struct HSV {
 };
 
 inline RGB to_rgb(const HSV &hsv) {
-  float C = hsv.v * hsv.s; // 彩度に対する最大の色成分の差
-  float X = C * (1 - fabsf(fmodf(hsv.h / 60.0, 2) - 1));
-  float m = hsv.v - C;
-
-  float r_prime, g_prime, b_prime;
+  float c = hsv.v * hsv.s;
+  float x = c * (1.0f - std::fabs(std::fmod(hsv.h / 60.0f, 2.0f) - 1.0f));
+  float m = hsv.v - c;
 
   if (hsv.h >= 0 && hsv.h < 60) {
-    r_prime = C;
-    g_prime = X;
-    b_prime = 0;
+    return {(c + m), (x + m), (0 + m)};
   } else if (hsv.h >= 60 && hsv.h < 120) {
-    r_prime = X;
-    g_prime = C;
-    b_prime = 0;
+    return {(x + m), (c + m), (0 + m)};
   } else if (hsv.h >= 120 && hsv.h < 180) {
-    r_prime = 0;
-    g_prime = C;
-    b_prime = X;
+    return {(0 + m), (c + m), (x + m)};
   } else if (hsv.h >= 180 && hsv.h < 240) {
-    r_prime = 0;
-    g_prime = X;
-    b_prime = C;
+    return {(0 + m), (x + m), (c + m)};
   } else if (hsv.h >= 240 && hsv.h < 300) {
-    r_prime = X;
-    g_prime = 0;
-    b_prime = C;
+    return {(x + m), (0 + m), (c + m)};
   } else {
-    r_prime = C;
-    g_prime = 0;
-    b_prime = X;
+    return {(c + m), (0 + m), (x + m)};
   }
-
-  // RGB値に変換
-  return {(r_prime + m), (g_prime + m), (b_prime + m)};
 }
 
-// 1.25us周期のPWMを生成する = 800kHz
-// 25カウント周期
-// 0.4us = 8カウント
-// 0.85us = 16カウント
+// period: 1.25us
+// freq: 800kHz
+// counter period: 25-1
+// dma circular mode
 class WS2812B {
 public:
   WS2812B(TIM_HandleTypeDef *htim, uint32_t channel, size_t size)
