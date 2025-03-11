@@ -33,7 +33,6 @@ public:
     uart_.attach_abort_callback(
         [](void *args) {
           auto bno055 = reinterpret_cast<BNO055 *>(args);
-          bno055->tx_sem_.release();
           bno055->uart_.receive_it(&bno055->rx_buf_, 1);
         },
         this);
