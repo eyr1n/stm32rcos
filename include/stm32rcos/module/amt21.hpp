@@ -42,20 +42,12 @@ public:
           amt21->rx_sem_.release();
         },
         this);
-    uart_.attach_abort_callback(
-        [](void *args) {
-          auto amt21 = reinterpret_cast<AMT21 *>(args);
-          amt21->tx_sem_.release();
-          amt21->rx_sem_.release();
-        },
-        this);
   }
 
   ~AMT21() {
     uart_.abort();
     uart_.detach_tx_callback();
     uart_.detach_rx_callback();
-    uart_.detach_abort_callback();
   }
 
   bool update() {
@@ -108,6 +100,7 @@ private:
 
   bool send_command(uint8_t command, uint8_t *response) {
     uint8_t data = address_ | command;
+    uart_.abort();
     if (!uart_.receive_dma(reinterpret_cast<uint8_t *>(response), 2)) {
       return false;
     }
@@ -125,6 +118,7 @@ private:
 
   bool send_extended_command(uint8_t command) {
     std::array<uint8_t, 2> data{static_cast<uint8_t>(address_ | 0x02), command};
+    uart_.abort();
     if (!uart_.transmit_dma(data.data(), data.size())) {
       return false;
     }
