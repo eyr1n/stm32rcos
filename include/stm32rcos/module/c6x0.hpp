@@ -112,22 +112,23 @@ public:
 
   float get_rpm() override { return rpm_; }
 
-  int16_t get_current() {
+  float get_current() {
     switch (type_) {
     case C6x0Type::C610:
       return current_;
     case C6x0Type::C620:
-      return current_ * 20000 / 16384;
+      return current_ * 20000.0f / 16384.0f;
     }
   }
 
-  void set_current(int16_t current) {
+  void set_current(float current) {
     switch (type_) {
     case C6x0Type::C610:
-      target_current_ = current;
+      target_current_ = std::clamp(current, -10000.0f, 10000.0f);
       break;
     case C6x0Type::C620:
-      target_current_ = static_cast<int64_t>(current) * 16384 / 20000;
+      target_current_ =
+          std::clamp(current, -20000.0f, 20000.0f) * 16384.0f / 20000.0f;
       break;
     }
   }
