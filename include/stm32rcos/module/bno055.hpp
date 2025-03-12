@@ -83,10 +83,6 @@ private:
   core::Queue<uint8_t> rx_queue_{64};
   uint8_t rx_buf_;
 
-  Eigen::Quaternionf quat_orig_{Eigen::Quaternionf::Identity()};
-  Eigen::Quaternionf quat_offset_{Eigen::Quaternionf::Identity()};
-  Eigen::Quaternionf quat_{Eigen::Quaternionf::Identity()};
-
   bool write_reg(uint8_t addr, const uint8_t *data, uint8_t size) {
     std::array<uint8_t, 4> buf{0xAA, 0x00, addr, size};
     rx_queue_.clear();
