@@ -1,3 +1,4 @@
+
 #pragma once
 
 #include <array>
@@ -5,10 +6,13 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
-#include <type_traits>
 
 #include <Eigen/Geometry>
 
+#include <FreeRTOS.h>
+#include <task.h>
+
+#include "stm32rcos/core/queue.hpp"
 #include "stm32rcos/core/semaphore.hpp"
 #include "stm32rcos/peripheral/uart.hpp"
 
@@ -27,26 +31,36 @@ public:
     uart_.attach_rx_callback(
         [](void *args) {
           auto bno055 = reinterpret_cast<BNO055 *>(args);
-          bno055->rx_sem_.release();
+          bno055->rx_queue_.push(bno055->rx_buf_, 0);
+          bno055->uart_.receive_it(&bno055->rx_buf_, 1);
         },
         this);
+    uart_.attach_abort_callback(
+        [](void *args) {
+          auto bno055 = reinterpret_cast<BNO055 *>(args);
+          bno055->uart_.receive_it(&bno055->rx_buf_, 1);
+        },
+        this);
+    uart_.receive_it(&rx_buf_, 1);
   }
 
   ~BNO055() {
     uart_.abort();
     uart_.detach_tx_callback();
     uart_.detach_rx_callback();
+    uart_.detach_abort_callback();
   }
 
   bool start(uint32_t timeout) {
-    uint32_t start = osKernelGetTickCount();
-    while (osKernelGetTickCount() - start < timeout) {
+    TimeOut_t timeout_state;
+    vTaskSetTimeOutState(&timeout_state);
+    while (xTaskCheckForTimeOut(&timeout_state, &timeout) == pdFALSE) {
       uint8_t data = 0x00;
-      if (!write_reg<1>(0x3D, &data, 50)) {
+      if (!write_reg(0x3D, &data, 1)) {
         continue;
       }
       data = 0x08;
-      if (!write_reg<1>(0x3D, &data, 50)) {
+      if (!write_reg(0x3D, &data, 1)) {
         continue;
       }
       return true;
@@ -56,7 +70,7 @@ public:
 
   std::optional<Eigen::Quaternionf> get_quaternion() {
     std::array<int16_t, 4> data;
-    if (!read_reg<8>(0x20, reinterpret_cast<uint8_t *>(data.data()), 20)) {
+    if (!read_reg(0x20, reinterpret_cast<uint8_t *>(data.data()), 8)) {
       return std::nullopt;
     }
     return Eigen::Quaternionf{data[0] / 16384.0f, data[1] / 16384.0f,
@@ -66,60 +80,66 @@ public:
 private:
   peripheral::UART &uart_;
   core::Semaphore tx_sem_{1, 1};
-  core::Semaphore rx_sem_{1, 1};
+  core::Queue<uint8_t> rx_queue_{64};
+  uint8_t rx_buf_;
 
-  template <size_t N>
-  bool write_reg(uint8_t addr, const uint8_t *data, uint32_t timeout) {
-    std::array<uint8_t, N + 4> tx_buf{0xAA, 0x00, addr, N};
-    std::array<uint8_t, 2> rx_buf;
-    std::copy(data, data + N, tx_buf.begin() + 4);
+  Eigen::Quaternionf quat_orig_{Eigen::Quaternionf::Identity()};
+  Eigen::Quaternionf quat_offset_{Eigen::Quaternionf::Identity()};
+  Eigen::Quaternionf quat_{Eigen::Quaternionf::Identity()};
+
+  bool write_reg(uint8_t addr, const uint8_t *data, uint8_t size) {
+    std::array<uint8_t, 4> buf{0xAA, 0x00, addr, size};
+    rx_queue_.clear();
     tx_sem_.try_acquire(0);
-    rx_sem_.try_acquire(0);
-    if (!uart_.receive_it(rx_buf.data(), rx_buf.size())) {
+    if (!uart_.transmit_it(buf.data(), buf.size())) {
       uart_.abort();
       return false;
     }
-    if (!uart_.transmit_it(tx_buf.data(), tx_buf.size())) {
+    if (!tx_sem_.try_acquire(5)) {
       uart_.abort();
       return false;
     }
-    if (!tx_sem_.try_acquire(10)) {
+    if (!uart_.transmit_it(data, size)) {
       uart_.abort();
       return false;
     }
-    if (!rx_sem_.try_acquire(timeout)) {
+    if (!tx_sem_.try_acquire(5)) {
       uart_.abort();
       return false;
     }
-    return rx_buf[0] == 0xEE && rx_buf[1] == 0x01;
+    for (size_t i = 0; i < 2; ++i) {
+      if (!rx_queue_.pop(buf[i], 5)) {
+        return false;
+      }
+    }
+    return buf[0] == 0xEE && buf[1] == 0x01;
   }
 
-  template <size_t N>
-  bool read_reg(uint8_t addr, uint8_t *data, uint32_t timeout) {
-    std::array<uint8_t, 4> tx_buf{0xAA, 0x01, addr, N};
-    std::array<uint8_t, N + 2> rx_buf;
+  bool read_reg(uint8_t addr, uint8_t *data, uint8_t size) {
+    std::array<uint8_t, 4> buf{0xAA, 0x01, addr, size};
+    rx_queue_.clear();
     tx_sem_.try_acquire(0);
-    rx_sem_.try_acquire(0);
-    if (!uart_.receive_it(rx_buf.data(), rx_buf.size())) {
+    if (!uart_.transmit_it(buf.data(), buf.size())) {
       uart_.abort();
       return false;
     }
-    if (!uart_.transmit_it(tx_buf.data(), tx_buf.size())) {
+    if (!tx_sem_.try_acquire(5)) {
       uart_.abort();
       return false;
     }
-    if (!tx_sem_.try_acquire(10)) {
-      uart_.abort();
+    for (size_t i = 0; i < 2; ++i) {
+      if (!rx_queue_.pop(buf[i], 5)) {
+        return false;
+      }
+    }
+    if (buf[0] != 0xBB || buf[1] != size) {
       return false;
     }
-    if (!rx_sem_.try_acquire(timeout)) {
-      uart_.abort();
-      return false;
+    for (size_t i = 0; i < size; ++i) {
+      if (!rx_queue_.pop(data[i], 5)) {
+        return false;
+      }
     }
-    if (rx_buf[0] != 0xBB || rx_buf[1] != N) {
-      return false;
-    }
-    std::copy(rx_buf.begin() + 2, rx_buf.end(), data);
     return true;
   }
 };
