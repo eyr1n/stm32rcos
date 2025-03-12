@@ -90,8 +90,8 @@ public:
 
 private:
   peripheral::UART &uart_;
-  core::Semaphore tx_sem_{1, 0};
-  core::Semaphore rx_sem_{1, 0};
+  core::Semaphore tx_sem_{1, 1};
+  core::Semaphore rx_sem_{1, 1};
 
   AMT21Resolution resolution_;
   AMT21Mode mode_;
@@ -100,11 +100,14 @@ private:
 
   bool send_command(uint8_t command, uint8_t *response) {
     uint8_t data = address_ | command;
-    uart_.abort();
+    tx_sem_.try_acquire(0);
+    rx_sem_.try_acquire(0);
     if (!uart_.receive_dma(reinterpret_cast<uint8_t *>(response), 2)) {
+      uart_.abort();
       return false;
     }
     if (!uart_.transmit_dma(&data, 1)) {
+      uart_.abort();
       return false;
     }
     if (!tx_sem_.try_acquire(1)) {
