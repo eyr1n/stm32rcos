@@ -5,6 +5,9 @@
 #include <iterator>
 #include <vector>
 
+#include <FreeRTOS.h>
+#include <task.h>
+
 #include "stm32_hal.h"
 
 #include "stm32rcos/core/queue.hpp"
@@ -41,11 +44,11 @@ public:
 
   bool transmit(const CANMessage &msg, uint32_t timeout) {
     FDCAN_TxHeaderTypeDef tx_header = create_tx_header(msg);
-    uint32_t start = osKernelGetTickCount();
+    TimeOut_t timeout_state;
+    vTaskSetTimeOutState(&timeout_state);
     while (HAL_FDCAN_AddMessageToTxFifoQ(hfdcan_, &tx_header,
                                          msg.data.data()) != HAL_OK) {
-      uint32_t elapsed = osKernelGetTickCount() - start;
-      if (elapsed >= timeout) {
+      if (xTaskCheckForTimeOut(&timeout_state, &timeout) == pdTRUE) {
         return false;
       }
       osDelay(1);
