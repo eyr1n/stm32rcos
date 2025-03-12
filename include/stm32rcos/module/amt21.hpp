@@ -121,8 +121,10 @@ private:
 
   bool send_extended_command(uint8_t command) {
     std::array<uint8_t, 2> data{static_cast<uint8_t>(address_ | 0x02), command};
-    uart_.abort();
+    tx_sem_.try_acquire(0);
+    rx_sem_.try_acquire(0);
     if (!uart_.transmit_dma(data.data(), data.size())) {
+      uart_.abort();
       return false;
     }
     if (!tx_sem_.try_acquire(1)) {
