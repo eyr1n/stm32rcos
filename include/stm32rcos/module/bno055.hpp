@@ -4,10 +4,11 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
+#include <type_traits>
 
 #include <Eigen/Geometry>
 
-#include "stm32rcos/core/queue.hpp"
 #include "stm32rcos/core/semaphore.hpp"
 #include "stm32rcos/peripheral/uart.hpp"
 
@@ -41,11 +42,11 @@ public:
     uint32_t start = osKernelGetTickCount();
     while (osKernelGetTickCount() - start < timeout) {
       uint8_t data = 0x00;
-      if (!write_reg<1>(0x3D, &data)) {
+      if (!write_reg<1>(0x3D, &data, 50)) {
         continue;
       }
       data = 0x08;
-      if (!write_reg<1>(0x3D, &data)) {
+      if (!write_reg<1>(0x3D, &data, 50)) {
         continue;
       }
       return true;
@@ -53,32 +54,24 @@ public:
     return false;
   }
 
-  bool update() {
+
+  std::optional<Eigen::Quaternionf> get_quaternion() {
     std::array<int16_t, 4> data;
-    if (!read_reg<8>(0x20, reinterpret_cast<uint8_t *>(data.data()))) {
-      return false;
+    if (!read_reg<8>(0x20, reinterpret_cast<uint8_t *>(data.data()), 20)) {
+      return std::nullopt;
     }
-    quat_orig_ = Eigen::Quaternionf{data[0] / 16384.0f, data[1] / 16384.0f,
-                                    data[2] / 16384.0f, data[3] / 16384.0f};
-    quat_ = quat_orig_ * quat_offset_;
-    return true;
+    return Eigen::Quaternionf{data[0] / 16384.0f, data[1] / 16384.0f,
+                              data[2] / 16384.0f, data[3] / 16384.0f};
   }
-
-  void reset() { quat_offset_ = quat_orig_; }
-
-  const Eigen::Quaternionf &get_quaternion() { return quat_; }
 
 private:
   peripheral::UART &uart_;
   core::Semaphore tx_sem_{1, 1};
   core::Semaphore rx_sem_{1, 1};
 
-  Eigen::Quaternionf quat_orig_{Eigen::Quaternionf::Identity()};
-  Eigen::Quaternionf quat_offset_{Eigen::Quaternionf::Identity()};
-  Eigen::Quaternionf quat_{Eigen::Quaternionf::Identity()};
-
-  template <size_t N> bool write_reg(uint8_t addr, const uint8_t *data) {
-    std::array<uint8_t, 4 + N> tx_buf{0xAA, 0x00, addr, N};
+  template <size_t N>
+  bool write_reg(uint8_t addr, const uint8_t *data, uint32_t timeout) {
+    std::array<uint8_t, N + 4> tx_buf{0xAA, 0x00, addr, N};
     std::array<uint8_t, 2> rx_buf;
     std::copy(data, data + N, tx_buf.begin() + 4);
     tx_sem_.try_acquire(0);
@@ -91,18 +84,21 @@ private:
       uart_.abort();
       return false;
     }
-    if (!tx_sem_.try_acquire(5)) {
+    if (!tx_sem_.try_acquire(10)) {
+      uart_.abort();
       return false;
     }
-    if (!rx_sem_.try_acquire(5)) {
+    if (!rx_sem_.try_acquire(timeout)) {
+      uart_.abort();
       return false;
     }
     return rx_buf[0] == 0xEE && rx_buf[1] == 0x01;
   }
 
-  template <size_t N> bool read_reg(uint8_t addr, uint8_t *data) {
+  template <size_t N>
+  bool read_reg(uint8_t addr, uint8_t *data, uint32_t timeout) {
     std::array<uint8_t, 4> tx_buf{0xAA, 0x01, addr, N};
-    std::array<uint8_t, 2 + N> rx_buf;
+    std::array<uint8_t, N + 2> rx_buf;
     tx_sem_.try_acquire(0);
     rx_sem_.try_acquire(0);
     if (!uart_.receive_it(rx_buf.data(), rx_buf.size())) {
@@ -113,10 +109,12 @@ private:
       uart_.abort();
       return false;
     }
-    if (!tx_sem_.try_acquire(5)) {
+    if (!tx_sem_.try_acquire(10)) {
+      uart_.abort();
       return false;
     }
-    if (!rx_sem_.try_acquire(5)) {
+    if (!rx_sem_.try_acquire(timeout)) {
+      uart_.abort();
       return false;
     }
     if (rx_buf[0] != 0xBB || rx_buf[1] != N) {
