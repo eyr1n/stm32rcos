@@ -26,35 +26,26 @@ public:
     uart_.attach_rx_callback(
         [](void *args) {
           auto bno055 = reinterpret_cast<BNO055 *>(args);
-          bno055->rx_queue_.push(bno055->rx_buf_, 0);
-          bno055->uart_.receive_it(&bno055->rx_buf_, 1);
+          bno055->rx_sem_.release();
         },
         this);
-    uart_.attach_abort_callback(
-        [](void *args) {
-          auto bno055 = reinterpret_cast<BNO055 *>(args);
-          bno055->uart_.receive_it(&bno055->rx_buf_, 1);
-        },
-        this);
-    uart_.receive_it(&rx_buf_, 1);
   }
 
   ~BNO055() {
     uart_.abort();
     uart_.detach_tx_callback();
     uart_.detach_rx_callback();
-    uart_.detach_abort_callback();
   }
 
   bool start(uint32_t timeout) {
     uint32_t start = osKernelGetTickCount();
     while (osKernelGetTickCount() - start < timeout) {
       uint8_t data = 0x00;
-      if (!write_reg(0x3D, &data, 1)) {
+      if (!write_reg<1>(0x3D, &data)) {
         continue;
       }
       data = 0x08;
-      if (!write_reg(0x3D, &data, 1)) {
+      if (!write_reg<1>(0x3D, &data)) {
         continue;
       }
       return true;
@@ -64,7 +55,7 @@ public:
 
   bool update() {
     std::array<int16_t, 4> data;
-    if (!read_reg(0x20, reinterpret_cast<uint8_t *>(data.data()), 8)) {
+    if (!read_reg<8>(0x20, reinterpret_cast<uint8_t *>(data.data()))) {
       return false;
     }
     quat_orig_ = Eigen::Quaternionf{data[0] / 16384.0f, data[1] / 16384.0f,
@@ -79,59 +70,59 @@ public:
 
 private:
   peripheral::UART &uart_;
-  core::Semaphore tx_sem_{1, 0};
-  core::Queue<uint8_t> rx_queue_{64};
-  uint8_t rx_buf_;
+  core::Semaphore tx_sem_{1, 1};
+  core::Semaphore rx_sem_{1, 1};
 
   Eigen::Quaternionf quat_orig_{Eigen::Quaternionf::Identity()};
   Eigen::Quaternionf quat_offset_{Eigen::Quaternionf::Identity()};
   Eigen::Quaternionf quat_{Eigen::Quaternionf::Identity()};
 
-  bool write_reg(uint8_t addr, uint8_t *data, uint8_t size) {
-    std::array<uint8_t, 4> buf{0xAA, 0x00, addr, size};
-    rx_queue_.clear();
-    if (!uart_.transmit_it(buf.data(), 4)) {
+  template <size_t N> bool write_reg(uint8_t addr, const uint8_t *data) {
+    std::array<uint8_t, 4 + N> tx_buf{0xAA, 0x00, addr, N};
+    std::array<uint8_t, 2> rx_buf;
+    std::copy(data, data + N, tx_buf.begin() + 4);
+    tx_sem_.try_acquire(0);
+    rx_sem_.try_acquire(0);
+    if (!uart_.receive_it(rx_buf.data(), rx_buf.size())) {
+      uart_.abort();
+      return false;
+    }
+    if (!uart_.transmit_it(tx_buf.data(), tx_buf.size())) {
+      uart_.abort();
       return false;
     }
     if (!tx_sem_.try_acquire(5)) {
       return false;
     }
-    if (!uart_.transmit_it(data, size)) {
+    if (!rx_sem_.try_acquire(5)) {
       return false;
     }
-    if (!tx_sem_.try_acquire(5)) {
-      return false;
-    }
-    for (size_t i = 0; i < 2; ++i) {
-      if (!rx_queue_.pop(buf[i], 5)) {
-        return false;
-      }
-    }
-    return buf[0] == 0xEE && buf[1] == 0x01;
+    return rx_buf[0] == 0xEE && rx_buf[1] == 0x01;
   }
 
-  bool read_reg(uint8_t addr, uint8_t *data, uint8_t size) {
-    std::array<uint8_t, 4> buf{0xAA, 0x01, addr, size};
-    rx_queue_.clear();
-    if (!uart_.transmit_it(buf.data(), 4)) {
+  template <size_t N> bool read_reg(uint8_t addr, uint8_t *data) {
+    std::array<uint8_t, 4> tx_buf{0xAA, 0x01, addr, N};
+    std::array<uint8_t, 2 + N> rx_buf;
+    tx_sem_.try_acquire(0);
+    rx_sem_.try_acquire(0);
+    if (!uart_.receive_it(rx_buf.data(), rx_buf.size())) {
+      uart_.abort();
+      return false;
+    }
+    if (!uart_.transmit_it(tx_buf.data(), tx_buf.size())) {
+      uart_.abort();
       return false;
     }
     if (!tx_sem_.try_acquire(5)) {
       return false;
     }
-    for (size_t i = 0; i < 2; ++i) {
-      if (!rx_queue_.pop(buf[i], 5)) {
-        return false;
-      }
-    }
-    if (buf[0] != 0xBB || buf[1] != size) {
+    if (!rx_sem_.try_acquire(5)) {
       return false;
     }
-    for (size_t i = 0; i < size; ++i) {
-      if (!rx_queue_.pop(data[i], 5)) {
-        return false;
-      }
+    if (rx_buf[0] != 0xBB || rx_buf[1] != N) {
+      return false;
     }
+    std::copy(rx_buf.begin() + 2, rx_buf.end(), data);
     return true;
   }
 };
