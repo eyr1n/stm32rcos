@@ -111,9 +111,11 @@ private:
       return false;
     }
     if (!tx_sem_.try_acquire(1)) {
+      uart_.abort();
       return false;
     }
     if (!rx_sem_.try_acquire(1)) {
+      uart_.abort();
       return false;
     }
     return checksum(response[0], response[1]);
@@ -128,6 +130,7 @@ private:
       return false;
     }
     if (!tx_sem_.try_acquire(1)) {
+      uart_.abort();
       return false;
     }
     return true;
