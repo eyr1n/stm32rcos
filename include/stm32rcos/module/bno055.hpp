@@ -54,7 +54,6 @@ public:
     return false;
   }
 
-
   std::optional<Eigen::Quaternionf> get_quaternion() {
     std::array<int16_t, 4> data;
     if (!read_reg<8>(0x20, reinterpret_cast<uint8_t *>(data.data()), 20)) {
