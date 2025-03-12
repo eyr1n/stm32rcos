@@ -1,11 +1,11 @@
 #pragma once
 
-#include "main.h"
-
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <vector>
+
+#include "stm32_hal.h"
 
 namespace stm32rcos {
 namespace module {

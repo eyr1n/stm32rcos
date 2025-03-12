@@ -1,4 +1,4 @@
-#include "main.h"
+#include "stm32_hal.h"
 
 #ifdef HAL_FDCAN_MODULE_ENABLED
 

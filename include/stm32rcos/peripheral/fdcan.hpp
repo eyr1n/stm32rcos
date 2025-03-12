@@ -1,11 +1,11 @@
 #pragma once
 
-#include "main.h"
-
 #include <algorithm>
 #include <cstdint>
 #include <iterator>
 #include <vector>
+
+#include "stm32_hal.h"
 
 #include "stm32rcos/core/queue.hpp"
 

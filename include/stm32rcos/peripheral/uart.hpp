@@ -1,11 +1,11 @@
 #pragma once
 
-#include "main.h"
-
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <utility>
+
+#include "stm32_hal.h"
 
 #include "stm32rcos/core/mutex.hpp"
 #include "stm32rcos/core/queue.hpp"
