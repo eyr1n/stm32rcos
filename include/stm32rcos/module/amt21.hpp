@@ -4,9 +4,8 @@
 #include <cstdint>
 #include <type_traits>
 
-#include "stm32rcos/core/queue.hpp"
-#include "stm32rcos/core/semaphore.hpp"
-#include "stm32rcos/peripheral/uart.hpp"
+#include "stm32rcos/core.hpp"
+#include "stm32rcos/hal.hpp"
 
 #include "encoder_base.hpp"
 
