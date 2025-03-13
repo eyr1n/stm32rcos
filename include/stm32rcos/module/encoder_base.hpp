@@ -4,7 +4,7 @@
 #include <cmath>
 #include <cstdint>
 
-#include <cmsis_os2.h>
+#include "stm32rcos/core.hpp"
 
 namespace stm32rcos {
 namespace module {

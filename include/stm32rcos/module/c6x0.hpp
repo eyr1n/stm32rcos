@@ -5,7 +5,8 @@
 #include <cstdint>
 #include <type_traits>
 
-#include "stm32rcos/core/queue.hpp"
+#include "stm32rcos/core.hpp"
+
 #include "stm32rcos/peripheral/can.hpp"
 
 #include "encoder_base.hpp"
@@ -42,7 +43,7 @@ public:
   void update() {
     peripheral::CANMessage msg;
     while (rx_queue_.pop(msg, 0)) {
-      if (msg.id >= 0x201 && msg.id < 0x201 + 8) {
+      if (0x201 <= msg.id && msg.id < 0x201 + 8) {
         C6x0<CAN_> *motor = motors_[msg.id - 0x201];
         if (motor) {
           int16_t count = static_cast<int16_t>(msg.data[0] << 8 | msg.data[1]);
@@ -100,34 +101,32 @@ template <class CAN_> class C6x0 : public EncoderBase {
 public:
   C6x0(C6x0Manager<CAN_> &manager, C6x0Type type, C6x0ID id)
       : EncoderBase{8192}, manager_{manager}, type_{type}, id_{id} {
-    manager_.motors_[static_cast<std::underlying_type_t<C6x0ID>>(id_)] = this;
+    manager_.motors_[utility::to_underlying(id_)] = this;
   }
 
-  ~C6x0() {
-    manager_.motors_[static_cast<std::underlying_type_t<C6x0ID>>(id_)] =
-        nullptr;
-  }
+  ~C6x0() { manager_.motors_[utility::to_underlying(id_)] = nullptr; }
 
   float get_rps() override { return get_rpm() / 60; }
 
   float get_rpm() override { return rpm_; }
 
-  int16_t get_current() {
+  float get_current() {
     switch (type_) {
     case C6x0Type::C610:
       return current_;
     case C6x0Type::C620:
-      return current_ * 20000 / 16384;
+      return current_ * 20000.0f / 16384.0f;
     }
   }
 
-  void set_current(int16_t current) {
+  void set_current(float current) {
     switch (type_) {
     case C6x0Type::C610:
-      target_current_ = current;
+      target_current_ = std::clamp(current, -10000.0f, 10000.0f);
       break;
     case C6x0Type::C620:
-      target_current_ = static_cast<int64_t>(current) * 16384 / 20000;
+      target_current_ =
+          std::clamp(current, -20000.0f, 20000.0f) * 16384.0f / 20000.0f;
       break;
     }
   }

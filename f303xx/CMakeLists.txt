@@ -8,3 +8,7 @@ target_sources(${PROJECT_NAME} INTERFACE
   bxcan.cpp
   uart.cpp
 )
+
+target_include_directories(${PROJECT_NAME} INTERFACE
+  include
+)

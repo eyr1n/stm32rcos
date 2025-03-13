@@ -1,8 +1,8 @@
 #pragma once
 
-#include "main.h"
-
 #include <cstdint>
+
+#include "stm32rcos/hal.hpp"
 
 #include "encoder_base.hpp"
 

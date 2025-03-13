@@ -5,7 +5,6 @@
 #include <cstdint>
 #include <type_traits>
 
-#include "stm32rcos/core/queue.hpp"
 #include "stm32rcos/peripheral/uart.hpp"
 
 namespace stm32rcos {
@@ -37,28 +36,7 @@ enum class PS3Key {
 
 class PS3 {
 public:
-  PS3(peripheral::UART &uart) : uart_{uart} {
-    uart_.attach_rx_callback(
-        [](void *args) {
-          auto ps3 = reinterpret_cast<PS3 *>(args);
-          ps3->rx_queue_.push(ps3->rx_buf_, 0);
-          ps3->uart_.receive_it(&ps3->rx_buf_, 1);
-        },
-        this);
-    uart_.attach_abort_callback(
-        [](void *args) {
-          auto ps3 = reinterpret_cast<PS3 *>(args);
-          ps3->uart_.receive_it(&ps3->rx_buf_, 1);
-        },
-        this);
-    uart_.receive_it(&rx_buf_, 1);
-  }
-
-  ~PS3() {
-    uart_.abort();
-    uart_.detach_rx_callback();
-    uart_.detach_abort_callback();
-  }
+  PS3(peripheral::UART &uart) : uart_{uart} {}
 
   void update() {
     keys_prev_ = keys_;
@@ -83,29 +61,24 @@ public:
     }
   }
 
-  float get_axis(PS3Axis axis) {
-    return axes_[static_cast<std::underlying_type_t<PS3Axis>>(axis)];
-  }
+  float get_axis(PS3Axis axis) { return axes_[utility::to_underlying(axis)]; }
 
   bool get_key(PS3Key key) {
-    return (keys_ & (1 << static_cast<std::underlying_type_t<PS3Key>>(key))) !=
-           0;
+    return (keys_ & (1 << utility::to_underlying(key))) != 0;
   }
 
   bool get_key_down(PS3Key key) {
     return ((keys_ ^ keys_prev_) & keys_ &
-            (1 << static_cast<std::underlying_type_t<PS3Key>>(key))) != 0;
+            (1 << utility::to_underlying(key))) != 0;
   }
 
   bool get_key_up(PS3Key key) {
     return ((keys_ ^ keys_prev_) & keys_prev_ &
-            (1 << static_cast<std::underlying_type_t<PS3Key>>(key))) != 0;
+            (1 << utility::to_underlying(key))) != 0;
   }
 
 private:
   peripheral::UART &uart_;
-  uint8_t rx_buf_;
-  core::Queue<uint8_t> rx_queue_{64};
   std::array<uint8_t, 8> msg_{};
   std::array<float, 4> axes_{};
   uint16_t keys_ = 0;
@@ -117,7 +90,7 @@ private:
       if (msg_[0] == 0x80) {
         break;
       }
-      if (!rx_queue_.pop(msg_[0], 0)) {
+      if (!uart_.receive(&msg_[0], 1, 0)) {
         return false;
       }
     }
@@ -126,10 +99,8 @@ private:
     }
 
     // メッセージの残りの部分を受信
-    for (size_t i = 0; i < 7; ++i) {
-      if (!rx_queue_.pop(msg_[i + 1], 0)) {
-        return false;
-      }
+    if (!uart_.receive(&msg_[1], 7, 0)) {
+      return false;
     }
     return true;
   }
