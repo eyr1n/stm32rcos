@@ -1,21 +1,25 @@
-#include "stm32_hal.h"
+#include "stm32rcos/hal.hpp"
 
 #ifdef HAL_FDCAN_MODULE_ENABLED
 
-#include "stm32rcos/peripheral/fdcan.hpp"
-
-using stm32rcos::peripheral::FDCAN;
-
-FDCAN &FDCAN::get_instance(FDCAN_HandleTypeDef *hfdcan) {
+static void **fdcan_context(FDCAN_HandleTypeDef *hfdcan) {
   if (hfdcan->Instance == FDCAN1) {
-    static FDCAN can1{hfdcan};
-    return can1;
+    static void *context;
+    return &context;
   }
   if (hfdcan->Instance == FDCAN2) {
-    static FDCAN can2{hfdcan};
-    return can2;
+    static void *context;
+    return &context;
   }
   __builtin_unreachable();
+}
+
+void *stm32rcos::get_fdcan_context(FDCAN_HandleTypeDef *hfdcan) {
+  return *fdcan_context(hfdcan);
+}
+
+void stm32rcos::set_fdcan_context(FDCAN_HandleTypeDef *hfdcan, void *context) {
+  *fdcan_context(hfdcan) = context;
 }
 
 #endif
