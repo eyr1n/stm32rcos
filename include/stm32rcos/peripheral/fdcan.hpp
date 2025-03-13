@@ -5,12 +5,8 @@
 #include <iterator>
 #include <vector>
 
-#include <FreeRTOS.h>
-#include <task.h>
-
-#include "stm32_hal.h"
-
-#include "stm32rcos/core/queue.hpp"
+#include "stm32rcos/core.hpp"
+#include "stm32rcos/hal.hpp"
 
 #include "can.hpp"
 
@@ -19,7 +15,13 @@ namespace peripheral {
 
 class FDCAN {
 public:
-  static FDCAN &get_instance(FDCAN_HandleTypeDef *hfdcan);
+  FDCAN(FDCAN_HandleTypeDef *hfdcan)
+      : hfdcan_{hfdcan}, std_rx_queues_(hfdcan_->Init.StdFiltersNbr, nullptr),
+        ext_rx_queues_(hfdcan_->Init.ExtFiltersNbr, nullptr) {
+    set_fdcan_context(hfdcan_, this);
+  }
+
+  ~FDCAN() { set_fdcan_context(hfdcan_, nullptr); }
 
   bool start() {
     if (HAL_FDCAN_ConfigGlobalFilter(hfdcan_, FDCAN_REJECT, FDCAN_REJECT,
@@ -44,11 +46,10 @@ public:
 
   bool transmit(const CANMessage &msg, uint32_t timeout) {
     FDCAN_TxHeaderTypeDef tx_header = create_tx_header(msg);
-    TimeOut_t timeout_state;
-    vTaskSetTimeOutState(&timeout_state);
+    utility::TimeoutHelper timeout_helper;
     while (HAL_FDCAN_AddMessageToTxFifoQ(hfdcan_, &tx_header,
                                          msg.data.data()) != HAL_OK) {
-      if (xTaskCheckForTimeOut(&timeout_state, &timeout) == pdTRUE) {
+      if (timeout_helper.is_timeout(timeout)) {
         return false;
       }
       osDelay(1);
@@ -114,15 +115,6 @@ private:
   FDCAN_HandleTypeDef *hfdcan_;
   std::vector<core::Queue<CANMessage> *> std_rx_queues_{};
   std::vector<core::Queue<CANMessage> *> ext_rx_queues_{};
-
-  FDCAN(FDCAN_HandleTypeDef *hfdcan)
-      : hfdcan_{hfdcan}, std_rx_queues_(hfdcan_->Init.StdFiltersNbr, nullptr),
-        ext_rx_queues_(hfdcan_->Init.ExtFiltersNbr, nullptr) {}
-
-  FDCAN(const FDCAN &) = delete;
-  FDCAN &operator=(const FDCAN &) = delete;
-  FDCAN(FDCAN &&) = delete;
-  FDCAN &operator=(FDCAN &&) = delete;
 
   size_t find_std_rx_queue_index(const core::Queue<CANMessage> *queue) {
     return std::distance(
@@ -236,9 +228,6 @@ private:
       break;
     }
   }
-
-  friend void ::HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan,
-                                          uint32_t RxFifo0ITs);
 };
 
 } // namespace peripheral
