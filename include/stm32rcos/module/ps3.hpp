@@ -81,8 +81,6 @@ public:
 
 private:
   peripheral::UART &uart_;
-  uint8_t rx_buf_;
-  core::Queue<uint8_t> rx_queue_{64};
   std::array<uint8_t, 8> msg_{};
   std::array<float, 4> axes_{};
   uint16_t keys_ = 0;
