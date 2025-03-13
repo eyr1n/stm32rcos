@@ -26,9 +26,8 @@ class AMT21 : public EncoderBase {
 public:
   AMT21(UART_HandleTypeDef *huart, AMT21Resolution resolution, AMT21Mode mode,
         uint8_t address)
-      : EncoderBase{1 << static_cast<std::underlying_type_t<AMT21Resolution>>(
-                        resolution)},
-        huart_{huart}, resolution_{resolution}, mode_{mode}, address_{address} {
+      : EncoderBase{1 << utility::to_underlying(resolution)}, huart_{huart},
+        resolution_{resolution}, mode_{mode}, address_{address} {
     set_uart_context(huart_, this);
     HAL_UART_RegisterCallback(
         huart_, HAL_UART_TX_COMPLETE_CB_ID, [](UART_HandleTypeDef *huart) {
@@ -50,8 +49,7 @@ public:
   }
 
   bool update() {
-    uint16_t cpr =
-        1 << static_cast<std::underlying_type_t<AMT21Resolution>>(resolution_);
+    uint16_t cpr = 1 << utility::to_underlying(resolution_);
     uint16_t response;
     if (!send_command(0x00, reinterpret_cast<uint8_t *>(&response))) {
       return false;
