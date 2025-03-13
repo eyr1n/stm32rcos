@@ -2,20 +2,24 @@
 
 #ifdef HAL_CAN_MODULE_ENABLED
 
-#include "stm32rcos/peripheral/bxcan.hpp"
-
-using stm32rcos::peripheral::BxCAN;
-
-BxCAN &BxCAN::get_instance(CAN_HandleTypeDef *hcan) {
+static void **bxcan_context(CAN_HandleTypeDef *hcan) {
   if (hcan->Instance == CAN1) {
-    static BxCAN can1{hcan};
-    return can1;
+    static void *context;
+    return &context;
   }
   if (hcan->Instance == CAN2) {
-    static BxCAN can2{hcan};
-    return can2;
+    static void *context;
+    return &context;
   }
   __builtin_unreachable();
+}
+
+void *stm32rcos::get_bxcan_context(CAN_HandleTypeDef *hcan) {
+  return *bxcan_context(hcan);
+}
+
+void stm32rcos::set_bxcan_context(CAN_HandleTypeDef *hcan, void *context) {
+  *bxcan_context(hcan) = context;
 }
 
 #endif

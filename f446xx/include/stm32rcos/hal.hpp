@@ -9,4 +9,9 @@ void *get_uart_context(UART_HandleTypeDef *huart);
 void set_uart_context(UART_HandleTypeDef *huart, void *context);
 #endif
 
+#ifdef HAL_CAN_MODULE_ENABLED
+void *get_bxcan_context(CAN_HandleTypeDef *hcan);
+void set_bxcan_context(CAN_HandleTypeDef *hcan, void *context);
+#endif
+
 } // namespace stm32rcos
