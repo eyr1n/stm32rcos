@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "stm32_hal.h"
+#include "stm32rcos/hal.hpp"
 
 namespace stm32rcos {
 namespace module {
