@@ -106,7 +106,7 @@ private:
       uart_.abort();
       return false;
     }
-    if (!uart_.transmit_dma(&data, 1)) {
+    if (!uart_.transmit_it(&data, 1)) {
       uart_.abort();
       return false;
     }
@@ -125,7 +125,7 @@ private:
     std::array<uint8_t, 2> data{static_cast<uint8_t>(address_ | 0x02), command};
     tx_sem_.try_acquire(0);
     rx_sem_.try_acquire(0);
-    if (!uart_.transmit_dma(data.data(), data.size())) {
+    if (!uart_.transmit_it(data.data(), data.size())) {
       uart_.abort();
       return false;
     }

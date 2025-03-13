@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <array>
@@ -12,43 +11,47 @@
 #include <FreeRTOS.h>
 #include <task.h>
 
+#include "stm32_hal.h"
+
 #include "stm32rcos/core/queue.hpp"
 #include "stm32rcos/core/semaphore.hpp"
-#include "stm32rcos/peripheral/uart.hpp"
 
 namespace stm32rcos {
 namespace module {
 
 class BNO055 {
 public:
-  BNO055(peripheral::UART &uart) : uart_{uart} {
-    uart_.attach_tx_callback(
-        [](void *args) {
-          auto bno055 = reinterpret_cast<BNO055 *>(args);
+  BNO055(UART_HandleTypeDef *huart) : huart_{huart} {
+    set_uart_context(huart_, this);
+    HAL_UART_RegisterCallback(
+        huart_, HAL_UART_TX_COMPLETE_CB_ID, [](UART_HandleTypeDef *huart) {
+          auto bno055 = reinterpret_cast<BNO055 *>(get_uart_context(huart));
           bno055->tx_sem_.release();
-        },
-        this);
-    uart_.attach_rx_callback(
-        [](void *args) {
-          auto bno055 = reinterpret_cast<BNO055 *>(args);
+        });
+    HAL_UART_RegisterCallback(
+        huart_, HAL_UART_RX_COMPLETE_CB_ID, [](UART_HandleTypeDef *huart) {
+          auto bno055 = reinterpret_cast<BNO055 *>(get_uart_context(huart));
           bno055->rx_queue_.push(bno055->rx_buf_, 0);
-          bno055->uart_.receive_it(&bno055->rx_buf_, 1);
-        },
-        this);
-    uart_.attach_abort_callback(
-        [](void *args) {
-          auto bno055 = reinterpret_cast<BNO055 *>(args);
-          bno055->uart_.receive_it(&bno055->rx_buf_, 1);
-        },
-        this);
-    uart_.receive_it(&rx_buf_, 1);
+          HAL_UART_Receive_IT(huart, &bno055->rx_buf_, 1);
+        });
+    HAL_UART_RegisterCallback(
+        huart_, HAL_UART_ERROR_CB_ID,
+        [](UART_HandleTypeDef *huart) { HAL_UART_Abort_IT(huart); });
+    HAL_UART_RegisterCallback(
+        huart_, HAL_UART_ABORT_COMPLETE_CB_ID, [](UART_HandleTypeDef *huart) {
+          auto bno055 = reinterpret_cast<BNO055 *>(get_uart_context(huart));
+          HAL_UART_Receive_IT(huart, &bno055->rx_buf_, 1);
+        });
+    HAL_UART_Receive_IT(huart, &rx_buf_, 1);
   }
 
   ~BNO055() {
-    uart_.abort();
-    uart_.detach_tx_callback();
-    uart_.detach_rx_callback();
-    uart_.detach_abort_callback();
+    HAL_UART_Abort_IT(huart_);
+    HAL_UART_UnRegisterCallback(huart_, HAL_UART_TX_COMPLETE_CB_ID);
+    HAL_UART_UnRegisterCallback(huart_, HAL_UART_RX_COMPLETE_CB_ID);
+    HAL_UART_UnRegisterCallback(huart_, HAL_UART_ERROR_CB_ID);
+    HAL_UART_UnRegisterCallback(huart_, HAL_UART_ABORT_COMPLETE_CB_ID);
+    set_uart_context(huart_, nullptr);
   }
 
   bool start(uint32_t timeout) {
@@ -78,7 +81,7 @@ public:
   }
 
 private:
-  peripheral::UART &uart_;
+  UART_HandleTypeDef *huart_;
   core::Semaphore tx_sem_{1, 1};
   core::Queue<uint8_t> rx_queue_{64};
   uint8_t rx_buf_;
@@ -87,20 +90,20 @@ private:
     std::array<uint8_t, 4> buf{0xAA, 0x00, addr, size};
     rx_queue_.clear();
     tx_sem_.try_acquire(0);
-    if (!uart_.transmit_it(buf.data(), buf.size())) {
-      uart_.abort();
+    if (HAL_UART_Transmit_IT(huart_, buf.data(), buf.size()) != HAL_OK) {
+      HAL_UART_AbortTransmit_IT(huart_);
       return false;
     }
     if (!tx_sem_.try_acquire(5)) {
-      uart_.abort();
+      HAL_UART_AbortTransmit_IT(huart_);
       return false;
     }
-    if (!uart_.transmit_it(data, size)) {
-      uart_.abort();
+    if (HAL_UART_Transmit_IT(huart_, data, size) != HAL_OK) {
+      HAL_UART_AbortTransmit_IT(huart_);
       return false;
     }
     if (!tx_sem_.try_acquire(5)) {
-      uart_.abort();
+      HAL_UART_AbortTransmit_IT(huart_);
       return false;
     }
     for (size_t i = 0; i < 2; ++i) {
@@ -115,12 +118,12 @@ private:
     std::array<uint8_t, 4> buf{0xAA, 0x01, addr, size};
     rx_queue_.clear();
     tx_sem_.try_acquire(0);
-    if (!uart_.transmit_it(buf.data(), buf.size())) {
-      uart_.abort();
+    if (HAL_UART_Transmit_IT(huart_, buf.data(), buf.size()) != HAL_OK) {
+      HAL_UART_AbortTransmit_IT(huart_);
       return false;
     }
     if (!tx_sem_.try_acquire(5)) {
-      uart_.abort();
+      HAL_UART_AbortTransmit_IT(huart_);
       return false;
     }
     for (size_t i = 0; i < 2; ++i) {

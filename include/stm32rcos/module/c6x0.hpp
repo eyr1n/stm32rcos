@@ -42,7 +42,7 @@ public:
   void update() {
     peripheral::CANMessage msg;
     while (rx_queue_.pop(msg, 0)) {
-      if (msg.id >= 0x201 && msg.id < 0x201 + 8) {
+      if (0x201 <= msg.id && msg.id < 0x201 + 8) {
         C6x0<CAN_> *motor = motors_[msg.id - 0x201];
         if (motor) {
           int16_t count = static_cast<int16_t>(msg.data[0] << 8 | msg.data[1]);
