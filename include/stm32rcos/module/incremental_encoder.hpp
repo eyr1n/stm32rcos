@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-#include "stm32_hal.h"
+#include "stm32rcos/hal.hpp"
 
 #include "encoder_base.hpp"
 
