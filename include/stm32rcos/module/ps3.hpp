@@ -5,8 +5,6 @@
 #include <cstdint>
 #include <type_traits>
 
-#include "stm32rcos/core.hpp"
-
 #include "stm32rcos/peripheral/uart.hpp"
 
 namespace stm32rcos {
