@@ -5,7 +5,8 @@
 #include <cstdint>
 #include <type_traits>
 
-#include "stm32rcos/core/queue.hpp"
+#include "stm32rcos/core.hpp"
+
 #include "stm32rcos/peripheral/uart.hpp"
 
 namespace stm32rcos {
@@ -83,23 +84,20 @@ public:
     }
   }
 
-  float get_axis(PS3Axis axis) {
-    return axes_[static_cast<std::underlying_type_t<PS3Axis>>(axis)];
-  }
+  float get_axis(PS3Axis axis) { return axes_[utility::to_underlying(axis)]; }
 
   bool get_key(PS3Key key) {
-    return (keys_ & (1 << static_cast<std::underlying_type_t<PS3Key>>(key))) !=
-           0;
+    return (keys_ & (1 << utility::to_underlying(key))) != 0;
   }
 
   bool get_key_down(PS3Key key) {
     return ((keys_ ^ keys_prev_) & keys_ &
-            (1 << static_cast<std::underlying_type_t<PS3Key>>(key))) != 0;
+            (1 << utility::to_underlying(key))) != 0;
   }
 
   bool get_key_up(PS3Key key) {
     return ((keys_ ^ keys_prev_) & keys_prev_ &
-            (1 << static_cast<std::underlying_type_t<PS3Key>>(key))) != 0;
+            (1 << utility::to_underlying(key))) != 0;
   }
 
 private:

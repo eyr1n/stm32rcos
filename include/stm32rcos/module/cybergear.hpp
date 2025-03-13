@@ -180,7 +180,7 @@ public:
     std::array<uint8_t, 8U> data = {0x00};
     data[0] = ADDR_RUN_MODE & 0x00FF;
     data[1] = ADDR_RUN_MODE >> 8;
-    data[4] = static_cast<std::underlying_type_t<CybergearMotorMode>>(mode);
+    data[4] = utility::to_underlying(mode);
     send(motor_id_, CMD_RAM_WRITE, master_id_, data);
   }
 

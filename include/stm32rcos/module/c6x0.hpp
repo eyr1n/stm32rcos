@@ -5,7 +5,8 @@
 #include <cstdint>
 #include <type_traits>
 
-#include "stm32rcos/core/queue.hpp"
+#include "stm32rcos/core.hpp"
+
 #include "stm32rcos/peripheral/can.hpp"
 
 #include "encoder_base.hpp"
@@ -100,13 +101,10 @@ template <class CAN_> class C6x0 : public EncoderBase {
 public:
   C6x0(C6x0Manager<CAN_> &manager, C6x0Type type, C6x0ID id)
       : EncoderBase{8192}, manager_{manager}, type_{type}, id_{id} {
-    manager_.motors_[static_cast<std::underlying_type_t<C6x0ID>>(id_)] = this;
+    manager_.motors_[utility::to_underlying(id_)] = this;
   }
 
-  ~C6x0() {
-    manager_.motors_[static_cast<std::underlying_type_t<C6x0ID>>(id_)] =
-        nullptr;
-  }
+  ~C6x0() { manager_.motors_[utility::to_underlying(id_)] = nullptr; }
 
   float get_rps() override { return get_rpm() / 60; }
 
