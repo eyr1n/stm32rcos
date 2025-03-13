@@ -5,7 +5,8 @@
 #include <cstdint>
 #include <iterator>
 
-#include "stm32rcos.hpp"
+#include "stm32rcos/core.hpp"
+#include "stm32rcos/hal.hpp"
 
 #include "can.hpp"
 

@@ -1,4 +1,4 @@
-#include "stm32rcos.hpp"
+#include "stm32rcos/hal.hpp"
 
 #ifdef HAL_CAN_MODULE_ENABLED
 
