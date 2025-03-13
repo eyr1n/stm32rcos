@@ -25,29 +25,29 @@ enum class AMT21Mode {
 
 class AMT21 : public EncoderBase {
 public:
-  AMT21(peripheral::UART &uart, AMT21Resolution resolution, AMT21Mode mode,
+  AMT21(UART_HandleTypeDef *huart, AMT21Resolution resolution, AMT21Mode mode,
         uint8_t address)
       : EncoderBase{1 << static_cast<std::underlying_type_t<AMT21Resolution>>(
                         resolution)},
-        uart_{uart}, resolution_{resolution}, mode_{mode}, address_{address} {
-    uart_.attach_tx_callback(
-        [](void *args) {
-          auto amt21 = reinterpret_cast<AMT21 *>(args);
+        huart_{huart}, resolution_{resolution}, mode_{mode}, address_{address} {
+    set_uart_context(huart_, this);
+    HAL_UART_RegisterCallback(
+        huart_, HAL_UART_TX_COMPLETE_CB_ID, [](UART_HandleTypeDef *huart) {
+          auto amt21 = reinterpret_cast<AMT21 *>(get_uart_context(huart));
           amt21->tx_sem_.release();
-        },
-        this);
-    uart_.attach_rx_callback(
-        [](void *args) {
-          auto amt21 = reinterpret_cast<AMT21 *>(args);
+        });
+    HAL_UART_RegisterCallback(
+        huart_, HAL_UART_RX_COMPLETE_CB_ID, [](UART_HandleTypeDef *huart) {
+          auto amt21 = reinterpret_cast<AMT21 *>(get_uart_context(huart));
           amt21->rx_sem_.release();
-        },
-        this);
+        });
   }
 
   ~AMT21() {
-    uart_.abort();
-    uart_.detach_tx_callback();
-    uart_.detach_rx_callback();
+    HAL_UART_Abort_IT(huart_);
+    HAL_UART_UnRegisterCallback(huart_, HAL_UART_TX_COMPLETE_CB_ID);
+    HAL_UART_UnRegisterCallback(huart_, HAL_UART_RX_COMPLETE_CB_ID);
+    set_uart_context(huart_, nullptr);
   }
 
   bool update() {
@@ -89,7 +89,7 @@ public:
   }
 
 private:
-  peripheral::UART &uart_;
+  UART_HandleTypeDef *huart_;
   core::Semaphore tx_sem_{1, 1};
   core::Semaphore rx_sem_{1, 1};
 
@@ -102,41 +102,42 @@ private:
     uint8_t data = address_ | command;
     tx_sem_.try_acquire(0);
     rx_sem_.try_acquire(0);
-    if (!uart_.receive_dma(reinterpret_cast<uint8_t *>(response), 2)) {
-      uart_.abort();
+    if (HAL_UART_Receive_DMA(huart_, reinterpret_cast<uint8_t *>(response),
+                             2) != HAL_OK) {
+      HAL_UART_AbortReceive_IT(huart_);
       return false;
     }
-    if (!uart_.transmit_it(&data, 1)) {
-      uart_.abort();
+    if (HAL_UART_Transmit_IT(huart_, &data, 1) != HAL_OK) {
+      HAL_UART_Abort_IT(huart_);
       return false;
     }
     if (!tx_sem_.try_acquire(1)) {
-      uart_.abort();
+      HAL_UART_Abort_IT(huart_);
       return false;
     }
     if (!rx_sem_.try_acquire(1)) {
-      uart_.abort();
+      HAL_UART_AbortReceive_IT(huart_);
       return false;
     }
-    return checksum(response[0], response[1]);
+    return test_checksum(response[0], response[1]);
   }
 
   bool send_extended_command(uint8_t command) {
     std::array<uint8_t, 2> data{static_cast<uint8_t>(address_ | 0x02), command};
     tx_sem_.try_acquire(0);
     rx_sem_.try_acquire(0);
-    if (!uart_.transmit_it(data.data(), data.size())) {
-      uart_.abort();
+    if (HAL_UART_Transmit_IT(huart_, data.data(), data.size()) != HAL_OK) {
+      HAL_UART_AbortTransmit_IT(huart_);
       return false;
     }
     if (!tx_sem_.try_acquire(1)) {
-      uart_.abort();
+      HAL_UART_AbortTransmit_IT(huart_);
       return false;
     }
     return true;
   }
 
-  bool checksum(uint8_t l, uint8_t h) {
+  bool test_checksum(uint8_t l, uint8_t h) {
     bool k1 = !(bit(h, 5) ^ bit(h, 3) ^ bit(h, 1) ^ bit(l, 7) ^ bit(l, 5) ^
                 bit(l, 3) ^ bit(l, 1));
     bool k0 = !(bit(h, 4) ^ bit(h, 2) ^ bit(h, 0) ^ bit(l, 6) ^ bit(l, 4) ^

@@ -9,4 +9,6 @@ target_sources(${PROJECT_NAME} INTERFACE
   uart.cpp
 )
 
-target_include_directories(${PROJECT_NAME} INTERFACE .)
+target_include_directories(${PROJECT_NAME} INTERFACE
+  include
+)
