@@ -38,28 +38,7 @@ enum class PS3Key {
 
 class PS3 {
 public:
-  PS3(peripheral::UART &uart) : uart_{uart} {
-    uart_.attach_rx_callback(
-        [](void *args) {
-          auto ps3 = reinterpret_cast<PS3 *>(args);
-          ps3->rx_queue_.push(ps3->rx_buf_, 0);
-          ps3->uart_.receive_it(&ps3->rx_buf_, 1);
-        },
-        this);
-    uart_.attach_abort_callback(
-        [](void *args) {
-          auto ps3 = reinterpret_cast<PS3 *>(args);
-          ps3->uart_.receive_it(&ps3->rx_buf_, 1);
-        },
-        this);
-    uart_.receive_it(&rx_buf_, 1);
-  }
-
-  ~PS3() {
-    uart_.abort();
-    uart_.detach_rx_callback();
-    uart_.detach_abort_callback();
-  }
+  PS3(peripheral::UART &uart) : uart_{uart} {}
 
   void update() {
     keys_prev_ = keys_;
@@ -115,7 +94,7 @@ private:
       if (msg_[0] == 0x80) {
         break;
       }
-      if (!rx_queue_.pop(msg_[0], 0)) {
+      if (!uart_.receive(&msg_[0], 1, 0)) {
         return false;
       }
     }
@@ -124,10 +103,8 @@ private:
     }
 
     // メッセージの残りの部分を受信
-    for (size_t i = 0; i < 7; ++i) {
-      if (!rx_queue_.pop(msg_[i + 1], 0)) {
-        return false;
-      }
+    if (!uart_.receive(&msg_[1], 7, 0)) {
+      return false;
     }
     return true;
   }
