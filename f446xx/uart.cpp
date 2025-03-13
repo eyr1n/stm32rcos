@@ -1,4 +1,4 @@
-#include "stm32_hal.h"
+#include "stm32rcos.hpp"
 
 #ifdef HAL_UART_MODULE_ENABLED
 

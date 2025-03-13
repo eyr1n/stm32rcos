@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <utility>
 
-#include "stm32_hal.h"
+#include "stm32rcos.hpp"
 
 #include "stm32rcos/core/mutex.hpp"
 #include "stm32rcos/core/queue.hpp"

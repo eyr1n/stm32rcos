@@ -11,7 +11,7 @@
 #include <FreeRTOS.h>
 #include <task.h>
 
-#include "stm32_hal.h"
+#include "stm32rcos.hpp"
 
 #include "stm32rcos/core/queue.hpp"
 #include "stm32rcos/core/semaphore.hpp"

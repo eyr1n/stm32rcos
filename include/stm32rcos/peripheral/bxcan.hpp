@@ -5,12 +5,7 @@
 #include <cstdint>
 #include <iterator>
 
-#include <FreeRTOS.h>
-#include <task.h>
-
-#include "stm32_hal.h"
-
-#include "stm32rcos/core/queue.hpp"
+#include "stm32rcos.hpp"
 
 #include "can.hpp"
 
@@ -40,11 +35,10 @@ public:
   bool transmit(const CANMessage &msg, uint32_t timeout) {
     CAN_TxHeaderTypeDef tx_header = create_tx_header(msg);
     uint32_t tx_mailbox;
-    TimeOut_t timeout_state;
-    vTaskSetTimeOutState(&timeout_state);
+    utility::TimeoutHelper timeout_helper;
     while (HAL_CAN_AddTxMessage(hcan_, &tx_header, msg.data.data(),
                                 &tx_mailbox) != HAL_OK) {
-      if (xTaskCheckForTimeOut(&timeout_state, &timeout) == pdTRUE) {
+      if (timeout_helper.is_timeout(timeout)) {
         return false;
       }
       osDelay(1);
