@@ -40,20 +40,20 @@ public:
   }
 
   std::optional<uint16_t> read_position() {
-    std::array<uint8_t, 2> res;
-    if (!send_command(0x00, res.data())) {
+    std::array<uint8_t, 2> buf;
+    if (!send_command(0x00, buf.data())) {
       return std::nullopt;
     }
-    return (res[1] << 8 | res[0]) &
+    return (buf[1] << 8 | buf[0]) &
            ((1 << core::to_underlying(resolution_)) - 1);
   }
 
   std::optional<int16_t> read_turns() {
-    std::array<uint8_t, 2> res;
-    if (!send_command(0x01, res.data())) {
+    std::array<uint8_t, 2> buf;
+    if (!send_command(0x01, buf.data())) {
       return std::nullopt;
     }
-    int16_t turns = (res[1] << 8 | res[0]) & 0x3FFF;
+    int16_t turns = (buf[1] << 8 | buf[0]) & 0x3FFF;
     if (turns & 0x2000) {
       turns |= 0xC000;
     }
@@ -71,15 +71,15 @@ private:
   AMT21Resolution resolution_;
   uint8_t address_;
 
-  bool send_command(uint8_t command, uint8_t *res) {
-    uint8_t data = address_ | command;
+  bool send_command(uint8_t command, uint8_t *response) {
+    uint8_t buf = address_ | command;
     tx_sem_.try_acquire(0);
     rx_sem_.try_acquire(0);
-    if (HAL_UART_Receive_DMA(huart_, res, 2) != HAL_OK) {
+    if (HAL_UART_Receive_DMA(huart_, response, 2) != HAL_OK) {
       HAL_UART_AbortReceive_IT(huart_);
       return false;
     }
-    if (HAL_UART_Transmit_IT(huart_, &data, sizeof(data)) != HAL_OK) {
+    if (HAL_UART_Transmit_IT(huart_, &buf, sizeof(buf)) != HAL_OK) {
       HAL_UART_Abort_IT(huart_);
       return false;
     }
@@ -91,17 +91,17 @@ private:
       HAL_UART_AbortReceive_IT(huart_);
       return false;
     }
-    if (!test_checksum(res[0], res[1])) {
+    if (!test_checksum(response[0], response[1])) {
       return false;
     }
-    return res;
+    return response;
   }
 
   bool send_extended_command(uint8_t command) {
-    std::array<uint8_t, 2> data{static_cast<uint8_t>(address_ | 0x02), command};
+    std::array<uint8_t, 2> buf{static_cast<uint8_t>(address_ | 0x02), command};
     tx_sem_.try_acquire(0);
     rx_sem_.try_acquire(0);
-    if (HAL_UART_Transmit_IT(huart_, data.data(), data.size()) != HAL_OK) {
+    if (HAL_UART_Transmit_IT(huart_, buf.data(), buf.size()) != HAL_OK) {
       HAL_UART_AbortTransmit_IT(huart_);
       return false;
     }

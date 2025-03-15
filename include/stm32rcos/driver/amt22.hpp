@@ -17,9 +17,10 @@ enum class AMT22Resolution : uint8_t {
 
 class AMT22 {
 public:
-  AMT22(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs, uint16_t cs_pin,
+  AMT22(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs_port, uint16_t cs_pin,
         AMT22Resolution resolution)
-      : hspi_{hspi}, cs_{cs}, cs_pin_{cs_pin}, resolution_{resolution} {
+      : hspi_{hspi}, cs_port_{cs_port}, cs_pin_{cs_pin},
+        resolution_{resolution} {
     set_spi_context(hspi_, this);
     HAL_SPI_RegisterCallback(
         hspi_, HAL_SPI_TX_RX_COMPLETE_CB_ID, [](SPI_HandleTypeDef *hspi) {
@@ -36,21 +37,21 @@ public:
 
   std::optional<uint16_t> read_position() {
     std::array<uint8_t, 2> command{0x00, 0x00};
-    std::array<uint8_t, 2> res;
-    if (!send_command(command.data(), res.data(), command.size())) {
+    std::array<uint8_t, 2> buf;
+    if (!send_command(command.data(), buf.data(), command.size())) {
       return std::nullopt;
     }
-    return (res[0] << 8 | res[1]) &
+    return (buf[0] << 8 | buf[1]) &
            ((1 << core::to_underlying(resolution_)) - 1);
   }
 
   std::optional<int16_t> read_turns() {
     std::array<uint8_t, 4> command{0x00, 0xA0, 0x00, 0x00};
-    std::array<uint8_t, 4> res;
-    if (!send_command(command.data(), res.data(), command.size())) {
+    std::array<uint8_t, 4> buf;
+    if (!send_command(command.data(), buf.data(), command.size())) {
       return std::nullopt;
     }
-    int16_t turns = (res[2] << 8 | res[3]) & 0x3FFF;
+    int16_t turns = (buf[2] << 8 | buf[3]) & 0x3FFF;
     if (turns & 0x2000) {
       turns |= 0xC000;
     }
@@ -59,28 +60,28 @@ public:
 
   bool set_zero_point() {
     std::array<uint8_t, 2> command{0x00, 0x70};
-    std::array<uint8_t, 2> res;
-    return send_command(command.data(), res.data(), command.size());
+    std::array<uint8_t, 2> buf;
+    return send_command(command.data(), buf.data(), command.size());
   }
 
   bool reset() {
     std::array<uint8_t, 2> command{0x00, 0x60};
-    std::array<uint8_t, 2> res;
-    return send_command(command.data(), res.data(), command.size());
+    std::array<uint8_t, 2> buf;
+    return send_command(command.data(), buf.data(), command.size());
   }
 
 private:
   SPI_HandleTypeDef *hspi_;
-  GPIO_TypeDef *cs_;
+  GPIO_TypeDef *cs_port_;
   uint16_t cs_pin_;
   core::Semaphore tx_rx_sem_{1, 1};
   AMT22Resolution resolution_;
 
-  bool send_command(const uint8_t *command, uint8_t *res, size_t size) {
-    HAL_GPIO_WritePin(cs_, cs_pin_, GPIO_PIN_RESET);
+  bool send_command(const uint8_t *command, uint8_t *response, size_t size) {
+    HAL_GPIO_WritePin(cs_port_, cs_pin_, GPIO_PIN_RESET);
     for (size_t i = 0; i < size; ++i) {
       tx_rx_sem_.try_acquire(0);
-      if (HAL_SPI_TransmitReceive_IT(hspi_, command + i, res + i,
+      if (HAL_SPI_TransmitReceive_IT(hspi_, command + i, response + i,
                                      sizeof(uint8_t))) {
         HAL_SPI_Abort_IT(hspi_);
         return false;
@@ -90,9 +91,9 @@ private:
         return false;
       }
     }
-    HAL_GPIO_WritePin(cs_, cs_pin_, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(cs_port_, cs_pin_, GPIO_PIN_SET);
     for (size_t i = 0; i < size; i += 2) {
-      if (!test_checksum(res[i], res[i + 1])) {
+      if (!test_checksum(response[i], response[i + 1])) {
         return false;
       }
     }
