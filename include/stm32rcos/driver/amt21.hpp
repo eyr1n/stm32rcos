@@ -53,7 +53,8 @@ public:
     if (!send_command(0x01, res.data())) {
       return std::nullopt;
     }
-    return res[1] << 8 | res[0];
+    int16_t turns = (res[1] << 8 | res[0]) << 2;
+    return turns >> 2;
   }
 
   bool set_zero_point() { return send_extended_command(0x5E); }
