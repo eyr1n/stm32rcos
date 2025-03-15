@@ -140,11 +140,11 @@ public:
     core::TimeoutHelper timeout_helper;
     while (!timeout_helper.is_timeout(timeout)) {
       uint8_t data = 0x00;
-      if (!write_register(0x3D, &data, 1)) {
+      if (!write_register(BNO055Register::OPR_MODE, &data, 1)) {
         continue;
       }
       data = 0x08;
-      if (!write_register(0x3D, &data, 1)) {
+      if (!write_register(BNO055Register::OPR_MODE, &data, 1)) {
         continue;
       }
       return true;

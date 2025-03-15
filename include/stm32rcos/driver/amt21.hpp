@@ -2,11 +2,10 @@
 
 #include <array>
 #include <cstdint>
+#include <optional>
 
 #include "stm32rcos/core.hpp"
 #include "stm32rcos/hal.hpp"
-
-#include "encoder_base.hpp"
 
 namespace stm32rcos {
 namespace driver {
@@ -16,17 +15,10 @@ enum class AMT21Resolution : uint8_t {
   _14 = 14,
 };
 
-enum class AMT21Mode {
-  SINGLE_TURN,
-  MULTI_TURN,
-};
-
-class AMT21 : public EncoderBase {
+class AMT21 {
 public:
-  AMT21(UART_HandleTypeDef *huart, AMT21Resolution resolution, AMT21Mode mode,
-        uint8_t address)
-      : EncoderBase{1 << core::to_underlying(resolution)}, huart_{huart},
-        resolution_{resolution}, mode_{mode}, address_{address} {
+  AMT21(UART_HandleTypeDef *huart, AMT21Resolution resolution, uint8_t address)
+      : huart_{huart}, resolution_{resolution}, address_{address} {
     set_uart_context(huart_, this);
     HAL_UART_RegisterCallback(
         huart_, HAL_UART_TX_COMPLETE_CB_ID, [](UART_HandleTypeDef *huart) {
@@ -47,42 +39,18 @@ public:
     set_uart_context(huart_, nullptr);
   }
 
-  bool update() {
-    uint16_t cpr = 1 << core::to_underlying(resolution_);
-    uint16_t response;
-    if (!send_command(0x00, reinterpret_cast<uint8_t *>(&response))) {
-      return false;
+  std::optional<uint16_t> read_position() {
+    if (auto position = send_command(0x00)) {
+      return *position & ((1 << core::to_underlying(resolution_)) - 1);
     }
-
-    int16_t count = response & (cpr - 1);
-    switch (mode_) {
-    case AMT21Mode::SINGLE_TURN: {
-      set_count(count);
-      break;
-    }
-    case AMT21Mode::MULTI_TURN: {
-      int16_t delta = count - prev_count_;
-      if (delta > (cpr / 2)) {
-        delta -= cpr;
-      } else if (delta < -(cpr / 2)) {
-        delta += cpr;
-      }
-      set_count(get_count() + delta);
-      prev_count_ = count;
-      break;
-    }
-    }
-    return true;
+    return std::nullopt;
   }
 
-  bool set_zero_point() {
-    if (!send_extended_command(0x5E)) {
-      return false;
-    }
-    prev_count_ = 0;
-    set_count(0);
-    return true;
-  }
+  std::optional<int16_t> read_turns() { return send_command(0x01); }
+
+  bool set_zero_point() { return send_extended_command(0x5E); }
+
+  bool reset() { return send_extended_command(0x75); }
 
 private:
   UART_HandleTypeDef *huart_;
@@ -90,32 +58,34 @@ private:
   core::Semaphore rx_sem_{1, 1};
 
   AMT21Resolution resolution_;
-  AMT21Mode mode_;
   uint8_t address_;
-  int16_t prev_count_ = 0;
 
-  bool send_command(uint8_t command, uint8_t *response) {
-    uint8_t data = address_ | command;
+  std::optional<int16_t> send_command(uint8_t command) {
+    uint8_t tx_data = address_ | command;
+    std::array<uint8_t, 2> rx_data;
     tx_sem_.try_acquire(0);
     rx_sem_.try_acquire(0);
-    if (HAL_UART_Receive_DMA(huart_, reinterpret_cast<uint8_t *>(response),
-                             2) != HAL_OK) {
+    if (HAL_UART_Receive_DMA(huart_, rx_data.data(), rx_data.size()) !=
+        HAL_OK) {
       HAL_UART_AbortReceive_IT(huart_);
-      return false;
+      return std::nullopt;
     }
-    if (HAL_UART_Transmit_IT(huart_, &data, 1) != HAL_OK) {
+    if (HAL_UART_Transmit_IT(huart_, &tx_data, sizeof(tx_data)) != HAL_OK) {
       HAL_UART_Abort_IT(huart_);
-      return false;
+      return std::nullopt;
     }
     if (!tx_sem_.try_acquire(1)) {
       HAL_UART_Abort_IT(huart_);
-      return false;
+      return std::nullopt;
     }
     if (!rx_sem_.try_acquire(1)) {
       HAL_UART_AbortReceive_IT(huart_);
-      return false;
+      return std::nullopt;
     }
-    return test_checksum(response[0], response[1]);
+    if (!test_checksum(rx_data[0], rx_data[1])) {
+      return std::nullopt;
+    }
+    return (rx_data[1] << 8) | rx_data[0];
   }
 
   bool send_extended_command(uint8_t command) {

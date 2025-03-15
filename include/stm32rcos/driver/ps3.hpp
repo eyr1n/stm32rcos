@@ -3,7 +3,6 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <type_traits>
 
 #include "stm32rcos/peripheral/uart.hpp"
 
