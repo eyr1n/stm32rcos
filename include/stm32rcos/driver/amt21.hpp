@@ -53,7 +53,7 @@ public:
     if (!send_command(0x01, res.data())) {
       return std::nullopt;
     }
-    int16_t turns = (res[1] << 8 | res[0]) << 2;
+    int16_t turns = (res[1] << 8 | res[0]) & 0x3FFF;
     if (turns & 0x2000) {
       turns |= 0xC000;
     }
