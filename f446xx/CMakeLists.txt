@@ -6,6 +6,7 @@ add_library(${PROJECT_NAME} INTERFACE)
 
 target_sources(${PROJECT_NAME} INTERFACE
   bxcan.cpp
+  spi.cpp
   uart.cpp
 )
 
