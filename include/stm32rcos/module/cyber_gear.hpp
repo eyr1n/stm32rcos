@@ -127,7 +127,7 @@ public:
 
   template <class T>
   std::optional<T> read_parameter(CyberGearParameter parameter) {
-    uint16_t index = utility::to_underlying(parameter);
+    uint16_t index = core::to_underlying(parameter);
     std::optional<CyberGearMessage> res = transmit_message(
         {CommunicationType::TYPE_17,
          motor_can_id_,
@@ -147,7 +147,7 @@ public:
   template <class T>
   std::optional<CyberGearFeedback> write_parameter(CyberGearParameter parameter,
                                                    T data) {
-    uint16_t index = utility::to_underlying(parameter);
+    uint16_t index = core::to_underlying(parameter);
     CyberGearMessage msg = {
         CommunicationType::TYPE_18,
         motor_can_id_,
@@ -191,7 +191,7 @@ private:
   static inline peripheral::CANMessage
   to_can_message(const CyberGearMessage &cyber_gear_msg) {
     return {static_cast<uint32_t>(
-                utility::to_underlying(cyber_gear_msg.type) << 24 |
+                core::to_underlying(cyber_gear_msg.type) << 24 |
                 cyber_gear_msg.data2 << 8 | cyber_gear_msg.target_address),
             true, 8, cyber_gear_msg.data1};
   }

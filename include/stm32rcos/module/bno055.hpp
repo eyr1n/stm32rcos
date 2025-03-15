@@ -20,7 +20,7 @@ public:
   BNO055(peripheral::UART &uart) : uart_{uart} {}
 
   bool start(uint32_t timeout) {
-    utility::TimeoutHelper timeout_helper;
+    core::TimeoutHelper timeout_helper;
     while (!timeout_helper.is_timeout(timeout)) {
       uint8_t data = 0x00;
       if (!write_reg(0x3D, &data, 1)) {

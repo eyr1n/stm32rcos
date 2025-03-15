@@ -84,7 +84,7 @@ public:
 
   bool transmit(const CANMessage &msg, uint32_t timeout) {
     FDCAN_TxHeaderTypeDef tx_header = create_tx_header(msg);
-    utility::TimeoutHelper timeout_helper;
+    core::TimeoutHelper timeout_helper;
     while (HAL_FDCAN_AddMessageToTxFifoQ(hfdcan_, &tx_header,
                                          msg.data.data()) != HAL_OK) {
       if (timeout_helper.is_timeout(timeout)) {

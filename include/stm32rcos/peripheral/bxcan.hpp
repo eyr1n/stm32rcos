@@ -63,7 +63,7 @@ public:
   bool transmit(const CANMessage &msg, uint32_t timeout) {
     CAN_TxHeaderTypeDef tx_header = create_tx_header(msg);
     uint32_t tx_mailbox;
-    utility::TimeoutHelper timeout_helper;
+    core::TimeoutHelper timeout_helper;
     while (HAL_CAN_AddTxMessage(hcan_, &tx_header, msg.data.data(),
                                 &tx_mailbox) != HAL_OK) {
       if (timeout_helper.is_timeout(timeout)) {
