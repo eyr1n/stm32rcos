@@ -12,7 +12,7 @@
 #include "stm32rcos/peripheral/can.hpp"
 
 namespace stm32rcos {
-namespace module {
+namespace driver {
 
 enum class CyberGearRunMode : uint8_t {
   OPERATION_CONTROL = 0x00,
@@ -275,5 +275,5 @@ private:
   }
 };
 
-} // namespace module
+} // namespace driver
 } // namespace stm32rcos

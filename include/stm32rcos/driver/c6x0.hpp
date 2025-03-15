@@ -12,7 +12,7 @@
 #include "encoder_base.hpp"
 
 namespace stm32rcos {
-namespace module {
+namespace driver {
 
 enum class C6x0Type {
   C610,
@@ -144,5 +144,5 @@ private:
   friend C6x0Manager<CAN_>;
 };
 
-} // namespace module
+} // namespace driver
 } // namespace stm32rcos

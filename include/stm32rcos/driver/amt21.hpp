@@ -10,7 +10,7 @@
 #include "encoder_base.hpp"
 
 namespace stm32rcos {
-namespace module {
+namespace driver {
 
 enum class AMT21Resolution : uint8_t {
   _12 = 12,
@@ -145,5 +145,5 @@ private:
   bool bit(uint8_t x, uint8_t i) { return ((x >> i) & 1) == 1; }
 };
 
-} // namespace module
+} // namespace driver
 } // namespace stm32rcos

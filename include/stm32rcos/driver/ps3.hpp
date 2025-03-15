@@ -8,7 +8,7 @@
 #include "stm32rcos/peripheral/uart.hpp"
 
 namespace stm32rcos {
-namespace module {
+namespace driver {
 
 enum class PS3Axis {
   LEFT_X,
@@ -114,5 +114,5 @@ private:
   }
 };
 
-} // namespace module
+} // namespace driver
 } // namespace stm32rcos

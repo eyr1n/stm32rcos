@@ -13,7 +13,7 @@
 #include "stm32rcos/peripheral/uart.hpp"
 
 namespace stm32rcos {
-namespace module {
+namespace driver {
 
 class BNO055 {
 public:
@@ -78,5 +78,5 @@ private:
   }
 };
 
-} // namespace module
+} // namespace driver
 } // namespace stm32rcos

@@ -7,7 +7,7 @@
 #include "encoder_base.hpp"
 
 namespace stm32rcos {
-namespace module {
+namespace driver {
 
 class IncrementalEncoder : public EncoderBase {
 public:
@@ -30,5 +30,5 @@ private:
   int64_t count_ = 0;
 };
 
-} // namespace module
+} // namespace driver
 } // namespace stm32rcos

@@ -7,7 +7,7 @@
 #include "stm32rcos/core.hpp"
 
 namespace stm32rcos {
-namespace module {
+namespace driver {
 
 class EncoderBase {
 public:
@@ -43,5 +43,5 @@ private:
   int64_t delta_ = 0;
 };
 
-} // namespace module
+} // namespace driver
 } // namespace stm32rcos
