@@ -54,7 +54,10 @@ public:
       return std::nullopt;
     }
     int16_t turns = (res[1] << 8 | res[0]) << 2;
-    return turns >> 2;
+    if (turns & 0x2000) {
+      turns |= 0xC000;
+    }
+    return turns;
   }
 
   bool set_zero_point() { return send_extended_command(0x5E); }
