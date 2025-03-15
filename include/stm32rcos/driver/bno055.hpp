@@ -162,8 +162,8 @@ public:
                               data[2] / 16384.0f, data[3] / 16384.0f};
   }
 
-  bool write_register(BNO055Register addr, const uint8_t *data, uint8_t size) {
-    std::array<uint8_t, 4> buf{0xAA, 0x00, core::to_underlying(addr), size};
+  bool write_register(BNO055Register address, const uint8_t *data, size_t size) {
+    std::array<uint8_t, 4> buf{0xAA, 0x00, core::to_underlying(address), size};
     uart_.flush();
     if (!uart_.transmit(buf.data(), buf.size(), 5)) {
       return false;
@@ -177,8 +177,8 @@ public:
     return buf[0] == 0xEE && buf[1] == 0x01;
   }
 
-  bool read_register(BNO055Register addr, uint8_t *data, uint8_t size) {
-    std::array<uint8_t, 4> buf{0xAA, 0x01, core::to_underlying(addr), size};
+  bool read_register(BNO055Register address, uint8_t *data, size_t size) {
+    std::array<uint8_t, 4> buf{0xAA, 0x01, core::to_underlying(address), size};
     uart_.flush();
     if (!uart_.transmit(buf.data(), 4, 5)) {
       return false;

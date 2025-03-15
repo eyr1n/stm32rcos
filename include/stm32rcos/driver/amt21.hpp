@@ -40,20 +40,20 @@ public:
   }
 
   std::optional<uint16_t> read_position() {
-    std::array<uint8_t, 2> buf;
-    if (!send_command(0x00, buf.data())) {
+    std::array<uint8_t, 2> data;
+    if (!send_command(0x00, data.data())) {
       return std::nullopt;
     }
-    return (buf[1] << 8 | buf[0]) &
+    return (data[1] << 8 | data[0]) &
            ((1 << core::to_underlying(resolution_)) - 1);
   }
 
   std::optional<int16_t> read_turns() {
-    std::array<uint8_t, 2> buf;
-    if (!send_command(0x01, buf.data())) {
+    std::array<uint8_t, 2> data;
+    if (!send_command(0x01, data.data())) {
       return std::nullopt;
     }
-    int16_t turns = (buf[1] << 8 | buf[0]) & 0x3FFF;
+    int16_t turns = (data[1] << 8 | data[0]) & 0x3FFF;
     if (turns & 0x2000) {
       turns |= 0xC000;
     }
@@ -71,11 +71,11 @@ private:
   AMT21Resolution resolution_;
   uint8_t address_;
 
-  bool send_command(uint8_t command, uint8_t *response) {
+  bool send_command(uint8_t command, uint8_t *data) {
     uint8_t buf = address_ | command;
     tx_sem_.try_acquire(0);
     rx_sem_.try_acquire(0);
-    if (HAL_UART_Receive_DMA(huart_, response, 2) != HAL_OK) {
+    if (HAL_UART_Receive_DMA(huart_, data, 2) != HAL_OK) {
       HAL_UART_AbortReceive_IT(huart_);
       return false;
     }
@@ -91,10 +91,10 @@ private:
       HAL_UART_AbortReceive_IT(huart_);
       return false;
     }
-    if (!test_checksum(response[0], response[1])) {
+    if (!test_checksum(data[0], data[1])) {
       return false;
     }
-    return response;
+    return data;
   }
 
   bool send_extended_command(uint8_t command) {

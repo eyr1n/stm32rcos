@@ -37,21 +37,21 @@ public:
 
   std::optional<uint16_t> read_position() {
     std::array<uint8_t, 2> command{0x00, 0x00};
-    std::array<uint8_t, 2> buf;
-    if (!send_command(command.data(), buf.data(), command.size())) {
+    std::array<uint8_t, 2> data;
+    if (!send_command(command.data(), data.data(), command.size())) {
       return std::nullopt;
     }
-    return (buf[0] << 8 | buf[1]) &
+    return (data[0] << 8 | data[1]) &
            ((1 << core::to_underlying(resolution_)) - 1);
   }
 
   std::optional<int16_t> read_turns() {
     std::array<uint8_t, 4> command{0x00, 0xA0, 0x00, 0x00};
-    std::array<uint8_t, 4> buf;
-    if (!send_command(command.data(), buf.data(), command.size())) {
+    std::array<uint8_t, 4> data;
+    if (!send_command(command.data(), data.data(), command.size())) {
       return std::nullopt;
     }
-    int16_t turns = (buf[2] << 8 | buf[3]) & 0x3FFF;
+    int16_t turns = (data[2] << 8 | data[3]) & 0x3FFF;
     if (turns & 0x2000) {
       turns |= 0xC000;
     }
@@ -60,14 +60,14 @@ public:
 
   bool set_zero_point() {
     std::array<uint8_t, 2> command{0x00, 0x70};
-    std::array<uint8_t, 2> buf;
-    return send_command(command.data(), buf.data(), command.size());
+    std::array<uint8_t, 2> data;
+    return send_command(command.data(), data.data(), command.size());
   }
 
   bool reset() {
     std::array<uint8_t, 2> command{0x00, 0x60};
-    std::array<uint8_t, 2> buf;
-    return send_command(command.data(), buf.data(), command.size());
+    std::array<uint8_t, 2> data;
+    return send_command(command.data(), data.data(), command.size());
   }
 
 private:
@@ -77,11 +77,11 @@ private:
   core::Semaphore tx_rx_sem_{1, 1};
   AMT22Resolution resolution_;
 
-  bool send_command(const uint8_t *command, uint8_t *response, size_t size) {
+  bool send_command(const uint8_t *command, uint8_t *data, size_t size) {
     HAL_GPIO_WritePin(cs_port_, cs_pin_, GPIO_PIN_RESET);
     for (size_t i = 0; i < size; ++i) {
       tx_rx_sem_.try_acquire(0);
-      if (HAL_SPI_TransmitReceive_IT(hspi_, command + i, response + i,
+      if (HAL_SPI_TransmitReceive_IT(hspi_, command + i, data + i,
                                      sizeof(uint8_t))) {
         HAL_SPI_Abort_IT(hspi_);
         return false;
@@ -93,7 +93,7 @@ private:
     }
     HAL_GPIO_WritePin(cs_port_, cs_pin_, GPIO_PIN_SET);
     for (size_t i = 0; i < size; i += 2) {
-      if (!test_checksum(response[i], response[i + 1])) {
+      if (!test_checksum(data[i], data[i + 1])) {
         return false;
       }
     }
