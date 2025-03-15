@@ -140,11 +140,11 @@ public:
     core::TimeoutHelper timeout_helper;
     while (!timeout_helper.is_timeout(timeout)) {
       uint8_t data = 0x00;
-      if (!write_register(BNO055Register::OPR_MODE, &data, 1)) {
+      if (!write_register(BNO055Register::OPR_MODE, &data, sizeof(data))) {
         continue;
       }
       data = 0x08;
-      if (!write_register(BNO055Register::OPR_MODE, &data, 1)) {
+      if (!write_register(BNO055Register::OPR_MODE, &data, sizeof(data))) {
         continue;
       }
       return true;
@@ -153,17 +153,22 @@ public:
   }
 
   std::optional<Eigen::Quaternionf> get_quaternion() {
-    std::array<int16_t, 4> data;
-    if (!read_register(BNO055Register::QUA_DATA_W_LSB,
-                       reinterpret_cast<uint8_t *>(data.data()), 8)) {
+    std::array<uint8_t, 8> data;
+    if (!read_register(BNO055Register::QUA_DATA_W_LSB, data.data(),
+                       data.size())) {
       return std::nullopt;
     }
-    return Eigen::Quaternionf{data[0] / 16384.0f, data[1] / 16384.0f,
-                              data[2] / 16384.0f, data[3] / 16384.0f};
+    return Eigen::Quaternionf{
+        static_cast<int16_t>((data[1] << 8) | data[0]) / 16384.0f,
+        static_cast<int16_t>((data[3] << 8) | data[2]) / 16384.0f,
+        static_cast<int16_t>((data[5] << 8) | data[4]) / 16384.0f,
+        static_cast<int16_t>((data[7] << 8) | data[6]) / 16384.0f};
   }
 
-  bool write_register(BNO055Register address, const uint8_t *data, size_t size) {
-    std::array<uint8_t, 4> buf{0xAA, 0x00, core::to_underlying(address), size};
+  bool write_register(BNO055Register address, const uint8_t *data,
+                      size_t size) {
+    std::array<uint8_t, 4> buf{0xAA, 0x00, core::to_underlying(address),
+                               static_cast<uint8_t>(size)};
     uart_.flush();
     if (!uart_.transmit(buf.data(), buf.size(), 5)) {
       return false;
@@ -178,7 +183,8 @@ public:
   }
 
   bool read_register(BNO055Register address, uint8_t *data, size_t size) {
-    std::array<uint8_t, 4> buf{0xAA, 0x01, core::to_underlying(address), size};
+    std::array<uint8_t, 4> buf{0xAA, 0x01, core::to_underlying(address),
+                               static_cast<uint8_t>(size)};
     uart_.flush();
     if (!uart_.transmit(buf.data(), 4, 5)) {
       return false;
