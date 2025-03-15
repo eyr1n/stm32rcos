@@ -50,7 +50,11 @@ public:
     if (!send_command(command.data(), res.data(), command.size())) {
       return std::nullopt;
     }
-    return res[0] << 8 | res[1];
+    int16_t turns = (res[2] << 8 | res[3]) & 0x3FFF;
+    if (turns & 0x2000) {
+      turns |= 0xC000;
+    }
+    return turns;
   }
 
   bool set_zero_point() {
@@ -74,7 +78,6 @@ private:
 
   bool send_command(const uint8_t *command, uint8_t *res, size_t size) {
     HAL_GPIO_WritePin(cs_, cs_pin_, GPIO_PIN_RESET);
-
     for (size_t i = 0; i < size; ++i) {
       tx_rx_sem_.try_acquire(0);
       if (HAL_SPI_TransmitReceive_IT(hspi_, command + i, res + i,
