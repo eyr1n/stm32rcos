@@ -2,7 +2,7 @@
 
 #include <algorithm>
 #include <array>
-#include <cstddef>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <optional>
@@ -10,8 +10,6 @@
 #include "stm32rcos/core.hpp"
 
 #include "stm32rcos/peripheral/can.hpp"
-
-#include "encoder_base.hpp"
 
 namespace stm32rcos {
 namespace module {
@@ -44,12 +42,12 @@ enum class CyberGearParameter : uint16_t {
   SPD_KI = 0x7020,
 };
 
-struct CyberGearMotorFeedback {
+struct CyberGearFeedback {
   uint8_t motor_can_id;
-  uint8_t fault_status;
-  uint8_t mode_status;
-  float rad;
-  float radps;
+  uint8_t fault;
+  uint8_t mode;
+  float angle;
+  float velocity;
   float torque;
   float temperature;
 };
@@ -57,61 +55,70 @@ struct CyberGearMotorFeedback {
 template <class CAN_> class CyberGear {
 public:
   CyberGear(CAN_ &can, uint8_t motor_can_id, uint8_t host_can_id)
-      : can_{can}, motor_can_id_{motor_can_id}, host_can_id_{host_can_id} {
-    can_.attach_rx_queue({motor_can_id_ << 8, 0x800FF00, true}, rx_queue_);
+      : can_{can}, motor_can_id_{motor_can_id}, master_can_id_{host_can_id} {
+    can_.attach_rx_queue(
+        {static_cast<uint32_t>(motor_can_id_ << 8), 0x800FF00, true},
+        rx_queue_);
   }
 
   ~CyberGear() { can_.detach_rx_queue(rx_queue_); }
 
-  std::optional<CyberGearMotorFeedback>
-  set_operation_control(float torque, float rad, float radps, float kp,
-                        float kd) {
-    int16_t torque_int =
+  std::optional<CyberGearFeedback> set_operation_control(float torque,
+                                                         float angle,
+                                                         float velocity,
+                                                         float kp, float kd) {
+    uint16_t torque_int =
         std::clamp((torque + 12.0f) / 24.0f * 65535.0f, 0.0f, 65535.0f);
-    int16_t rad_int = std::clamp<float>(
-        (rad + 4.0f * M_PI) / (8.0f * M_PI) * 65535.0f, 0.0f, 65535.0f);
-    int16_t radps_int =
-        std::clamp((rad + 30.0f) / 60.0f * 65535, 0.0f, 65535.0f);
-    int16_t kp_int = std::clamp(kp / 500.0f * 65535.0f, 0.0f, 65535.0f);
-    int16_t kd_int = std::clamp(kd / 5.0f * 65535.0f, 0.0f, 65535.0f);
-    std::optional<CyberGearMessage> res = transmit_message(
-        {CommunicationType::TYPE_1,
-         motor_can_id_,
-         {(rad_int >> 8) & 0xFF, rad_int & 0xFF, (radps_int >> 8) & 0xFF,
-          radps_int & 0xFF, (kp_int >> 8) & 0xFF, kp_int & 0xFF,
-          (kd_int >> 8) & 0xFF, kd_int & 0xFF},
-
-         torque_int});
+    uint16_t angle_int =
+        std::clamp((angle + 4.0f * static_cast<float>(M_PI)) /
+                       (8.0f * static_cast<float>(M_PI)) * 65535.0f,
+                   0.0f, 65535.0f);
+    uint16_t velocity_int =
+        std::clamp((velocity + 30.0f) / 60.0f * 65535.0f, 0.0f, 65535.0f);
+    uint16_t kp_int = std::clamp(kp / 500.0f * 65535.0f, 0.0f, 65535.0f);
+    uint16_t kd_int = std::clamp(kd / 5.0f * 65535.0f, 0.0f, 65535.0f);
+    std::optional<CyberGearMessage> res =
+        transmit_message({CommunicationType::TYPE_1,
+                          motor_can_id_,
+                          {static_cast<uint8_t>((angle_int >> 8) & 0xFF),
+                           static_cast<uint8_t>(angle_int & 0xFF),
+                           static_cast<uint8_t>((velocity_int >> 8) & 0xFF),
+                           static_cast<uint8_t>(velocity_int & 0xFF),
+                           static_cast<uint8_t>((kp_int >> 8) & 0xFF),
+                           static_cast<uint8_t>(kp_int & 0xFF),
+                           static_cast<uint8_t>((kd_int >> 8) & 0xFF),
+                           static_cast<uint8_t>(kd_int & 0xFF)},
+                          torque_int});
     if (!res) {
       return std::nullopt;
     }
     return to_cyber_gear_motor_feedback(*res);
   }
 
-  std::optional<CyberGearMotorFeedback> enable() {
+  std::optional<CyberGearFeedback> enable() {
     std::optional<CyberGearMessage> res = transmit_message(
-        {CommunicationType::TYPE_3, motor_can_id_, {}, host_can_id_});
+        {CommunicationType::TYPE_3, motor_can_id_, {}, master_can_id_});
     if (!res) {
       return std::nullopt;
     }
     return to_cyber_gear_motor_feedback(*res);
   }
 
-  std::optional<CyberGearMotorFeedback> stop(bool clear_fault) {
+  std::optional<CyberGearFeedback> stop(bool clear_fault) {
     std::optional<CyberGearMessage> res =
         transmit_message({CommunicationType::TYPE_4,
                           motor_can_id_,
                           {static_cast<uint8_t>(clear_fault)},
-                          host_can_id_});
+                          master_can_id_});
     if (!res) {
       return std::nullopt;
     }
     return to_cyber_gear_motor_feedback(*res);
   }
 
-  std::optional<CyberGearMotorFeedback> set_mechanical_zero_position() {
+  std::optional<CyberGearFeedback> set_position_to_mechanical_zero() {
     std::optional<CyberGearMessage> res = transmit_message(
-        {CommunicationType::TYPE_6, motor_can_id_, {1}, host_can_id_});
+        {CommunicationType::TYPE_6, motor_can_id_, {1}, master_can_id_});
     if (!res) {
       return std::nullopt;
     }
@@ -125,7 +132,7 @@ public:
         {CommunicationType::TYPE_17,
          motor_can_id_,
          {static_cast<uint8_t>(index), static_cast<uint8_t>(index >> 8)},
-         host_can_id_});
+         master_can_id_});
     if (!res) {
       return std::nullopt;
     }
@@ -138,14 +145,14 @@ public:
   }
 
   template <class T>
-  std::optional<CyberGearMotorFeedback>
-  write_parameter(CyberGearParameter parameter, T data) {
+  std::optional<CyberGearFeedback> write_parameter(CyberGearParameter parameter,
+                                                   T data) {
     uint16_t index = utility::to_underlying(parameter);
     CyberGearMessage msg = {
         CommunicationType::TYPE_18,
         motor_can_id_,
         {static_cast<uint8_t>(index), static_cast<uint8_t>(index >> 8)},
-        host_can_id_};
+        master_can_id_};
     std::memcpy(&msg.data1[4], &data, sizeof(T));
     std::optional<CyberGearMessage> res = transmit_message(msg);
     if (!res) {
@@ -179,7 +186,7 @@ private:
   CAN_ &can_;
   core::Queue<peripheral::CANMessage> rx_queue_{8};
   uint8_t motor_can_id_;
-  uint8_t host_can_id_;
+  uint8_t master_can_id_;
 
   static inline peripheral::CANMessage
   to_can_message(const CyberGearMessage &cyber_gear_msg) {
@@ -237,17 +244,18 @@ private:
     return cyber_gear_msg;
   }
 
-  static inline std::optional<CyberGearMotorFeedback>
+  static inline std::optional<CyberGearFeedback>
   to_cyber_gear_motor_feedback(const CyberGearMessage &msg) {
     if (msg.type != CommunicationType::TYPE_2) {
       return std::nullopt;
     }
-    return CyberGearMotorFeedback{
-        msg.data2 & 0xFF,
-        (msg.data2 >> 8) & 0x3F,
-        (msg.data2 >> 14) & 0x3,
-        ((msg.data1[0] << 8) | msg.data1[1]) / 65535.0f * 8.0f * M_PI -
-            4.0f * M_PI,
+    return CyberGearFeedback{
+        static_cast<uint8_t>(msg.data2 & 0xFF),
+        static_cast<uint8_t>((msg.data2 >> 8) & 0x3F),
+        static_cast<uint8_t>((msg.data2 >> 14) & 0x3),
+        ((msg.data1[0] << 8) | msg.data1[1]) / 65535.0f * 8.0f *
+                static_cast<float>(M_PI) -
+            4.0f * static_cast<float>(M_PI),
         ((msg.data1[2] << 8) | msg.data1[3]) / 65535.0f * 60.0f - 30.0f,
         ((msg.data1[4] << 8) | msg.data1[5]) / 65535.0f * 24.0f - 12.0f,
         ((msg.data1[6] << 8) | msg.data1[7]) / 10.0f};
@@ -265,7 +273,7 @@ private:
     }
     return to_cyber_gear_message(can_msg);
   }
-}; // namespace stm32rcos
+};
 
 } // namespace module
 } // namespace stm32rcos
