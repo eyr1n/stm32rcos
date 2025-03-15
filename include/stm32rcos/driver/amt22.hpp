@@ -17,93 +17,86 @@ enum class AMT22Resolution : uint8_t {
 
 class AMT22 {
 public:
-  AMT22(UART_HandleTypeDef *huart, AMT22Resolution resolution, uint8_t address)
-      : huart_{huart}, resolution_{resolution}, address_{address} {
-    set_uart_context(huart_, this);
-    HAL_UART_RegisterCallback(
-        huart_, HAL_UART_TX_COMPLETE_CB_ID, [](UART_HandleTypeDef *huart) {
-          auto amt21 = reinterpret_cast<AMT21 *>(get_uart_context(huart));
-          amt21->tx_sem_.release();
-        });
-    HAL_UART_RegisterCallback(
-        huart_, HAL_UART_RX_COMPLETE_CB_ID, [](UART_HandleTypeDef *huart) {
-          auto amt21 = reinterpret_cast<AMT21 *>(get_uart_context(huart));
-          amt21->rx_sem_.release();
+  AMT22(SPI_HandleTypeDef *hspi, GPIO_TypeDef *cs, uint16_t cs_pin,
+        AMT22Resolution resolution)
+      : hspi_{hspi}, cs_{cs}, cs_pin_{cs_pin}, resolution_{resolution} {
+    set_spi_context(hspi_, this);
+    HAL_SPI_RegisterCallback(
+        hspi_, HAL_SPI_TX_RX_COMPLETE_CB_ID, [](SPI_HandleTypeDef *hspi) {
+          auto amt22 = reinterpret_cast<AMT22 *>(get_spi_context(hspi));
+          amt22->tx_rx_sem_.release();
         });
   }
 
   ~AMT22() {
-    HAL_UART_Abort_IT(huart_);
-    HAL_UART_UnRegisterCallback(huart_, HAL_UART_TX_COMPLETE_CB_ID);
-    HAL_UART_UnRegisterCallback(huart_, HAL_UART_RX_COMPLETE_CB_ID);
-    set_uart_context(huart_, nullptr);
+    HAL_SPI_Abort_IT(hspi_);
+    HAL_SPI_UnRegisterCallback(hspi_, HAL_SPI_TX_RX_COMPLETE_CB_ID);
+    set_spi_context(hspi_, nullptr);
   }
 
   std::optional<uint16_t> read_position() {
-    if (auto position = send_command(0x00)) {
-      return *position & ((1 << core::to_underlying(resolution_)) - 1);
+    std::array<uint8_t, 2> command{0x00, 0x00};
+    std::array<uint8_t, 2> res;
+    if (!send_command(command.data(), res.data(), command.size())) {
+      return std::nullopt;
     }
-    return std::nullopt;
+    return (res[0] << 8 | res[1]) &
+           ((1 << core::to_underlying(resolution_)) - 1);
   }
 
-  std::optional<int16_t> read_turns() { return send_command(0x01); }
+  std::optional<int16_t> read_turns() {
+    std::array<uint8_t, 4> command{0x00, 0xA0, 0x00, 0x00};
+    std::array<uint8_t, 4> res;
+    if (!send_command(command.data(), res.data(), command.size())) {
+      return std::nullopt;
+    }
+    return res[0] << 8 | res[1];
+  }
 
-  bool set_zero_point() { return send_extended_command(0x5E); }
+  bool set_zero_point() {
+    std::array<uint8_t, 2> command{0x00, 0x70};
+    std::array<uint8_t, 2> res;
+    return send_command(command.data(), res.data(), command.size());
+  }
 
-  bool reset() { return send_extended_command(0x75); }
+  bool reset() {
+    std::array<uint8_t, 2> command{0x00, 0x60};
+    std::array<uint8_t, 2> res;
+    return send_command(command.data(), res.data(), command.size());
+  }
 
 private:
-  UART_HandleTypeDef *huart_;
-  core::Semaphore tx_sem_{1, 1};
-  core::Semaphore rx_sem_{1, 1};
+  SPI_HandleTypeDef *hspi_;
+  GPIO_TypeDef *cs_;
+  uint16_t cs_pin_;
+  core::Semaphore tx_rx_sem_{1, 1};
+  AMT22Resolution resolution_;
 
-  AMT21Resolution resolution_;
-  uint8_t address_;
+  bool send_command(const uint8_t *command, uint8_t *res, size_t size) {
+    HAL_GPIO_WritePin(cs_, cs_pin_, GPIO_PIN_RESET);
 
-  std::optional<int16_t> send_command(uint8_t command) {
-    uint8_t tx_data = address_ | command;
-    std::array<uint8_t, 2> rx_data;
-    tx_sem_.try_acquire(0);
-    rx_sem_.try_acquire(0);
-    if (HAL_UART_Receive_DMA(huart_, rx_data.data(), rx_data.size()) !=
-        HAL_OK) {
-      HAL_UART_AbortReceive_IT(huart_);
-      return std::nullopt;
+    for (size_t i = 0; i < size; ++i) {
+      tx_rx_sem_.try_acquire(0);
+      if (HAL_SPI_TransmitReceive_IT(hspi_, command + i, res + i,
+                                     sizeof(uint8_t))) {
+        HAL_SPI_Abort_IT(hspi_);
+        return false;
+      }
+      if (!tx_rx_sem_.try_acquire(1)) {
+        HAL_SPI_Abort_IT(hspi_);
+        return false;
+      }
     }
-    if (HAL_UART_Transmit_IT(huart_, &tx_data, sizeof(tx_data)) != HAL_OK) {
-      HAL_UART_Abort_IT(huart_);
-      return std::nullopt;
-    }
-    if (!tx_sem_.try_acquire(1)) {
-      HAL_UART_Abort_IT(huart_);
-      return std::nullopt;
-    }
-    if (!rx_sem_.try_acquire(1)) {
-      HAL_UART_AbortReceive_IT(huart_);
-      return std::nullopt;
-    }
-    if (!test_checksum(rx_data[0], rx_data[1])) {
-      return std::nullopt;
-    }
-    return (rx_data[1] << 8) | rx_data[0];
-  }
-
-  bool send_extended_command(uint8_t command) {
-    std::array<uint8_t, 2> data{static_cast<uint8_t>(address_ | 0x02), command};
-    tx_sem_.try_acquire(0);
-    rx_sem_.try_acquire(0);
-    if (HAL_UART_Transmit_IT(huart_, data.data(), data.size()) != HAL_OK) {
-      HAL_UART_AbortTransmit_IT(huart_);
-      return false;
-    }
-    if (!tx_sem_.try_acquire(1)) {
-      HAL_UART_AbortTransmit_IT(huart_);
-      return false;
+    HAL_GPIO_WritePin(cs_, cs_pin_, GPIO_PIN_SET);
+    for (size_t i = 0; i < size; i += 2) {
+      if (!test_checksum(res[i], res[i + 1])) {
+        return false;
+      }
     }
     return true;
   }
 
-  bool checksum(uint8_t l, uint8_t h) {
+  bool test_checksum(uint8_t l, uint8_t h) {
     bool k1 = !(bit(h, 5) ^ bit(h, 3) ^ bit(h, 1) ^ bit(l, 7) ^ bit(l, 5) ^
                 bit(l, 3) ^ bit(l, 1));
     bool k0 = !(bit(h, 4) ^ bit(h, 2) ^ bit(h, 0) ^ bit(l, 6) ^ bit(l, 4) ^

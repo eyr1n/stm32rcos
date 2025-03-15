@@ -40,13 +40,19 @@ public:
   }
 
   std::optional<uint16_t> read_position() {
-    if (auto position = send_command(0x00)) {
-      return *position & ((1 << core::to_underlying(resolution_)) - 1);
+    if (auto res = send_command(0x00)) {
+      return (res->at(1) << 8 | res->at(0)) &
+             ((1 << core::to_underlying(resolution_)) - 1);
     }
     return std::nullopt;
   }
 
-  std::optional<int16_t> read_turns() { return send_command(0x01); }
+  std::optional<int16_t> read_turns() {
+    if (auto res = send_command(0x01)) {
+      return res->at(1) << 8 | res->at(0);
+    }
+    return std::nullopt;
+  }
 
   bool set_zero_point() { return send_extended_command(0x5E); }
 
@@ -56,21 +62,19 @@ private:
   UART_HandleTypeDef *huart_;
   core::Semaphore tx_sem_{1, 1};
   core::Semaphore rx_sem_{1, 1};
-
   AMT21Resolution resolution_;
   uint8_t address_;
 
-  std::optional<int16_t> send_command(uint8_t command) {
-    uint8_t tx_data = address_ | command;
-    std::array<uint8_t, 2> rx_data;
+  std::optional<std::array<uint8_t, 2>> send_command(uint8_t command) {
+    uint8_t data = address_ | command;
+    std::array<uint8_t, 2> res;
     tx_sem_.try_acquire(0);
     rx_sem_.try_acquire(0);
-    if (HAL_UART_Receive_DMA(huart_, rx_data.data(), rx_data.size()) !=
-        HAL_OK) {
+    if (HAL_UART_Receive_DMA(huart_, res.data(), res.size()) != HAL_OK) {
       HAL_UART_AbortReceive_IT(huart_);
       return std::nullopt;
     }
-    if (HAL_UART_Transmit_IT(huart_, &tx_data, sizeof(tx_data)) != HAL_OK) {
+    if (HAL_UART_Transmit_IT(huart_, &data, sizeof(data)) != HAL_OK) {
       HAL_UART_Abort_IT(huart_);
       return std::nullopt;
     }
@@ -82,10 +86,10 @@ private:
       HAL_UART_AbortReceive_IT(huart_);
       return std::nullopt;
     }
-    if (!test_checksum(rx_data[0], rx_data[1])) {
+    if (!test_checksum(res[0], res[1])) {
       return std::nullopt;
     }
-    return (rx_data[1] << 8) | rx_data[0];
+    return res;
   }
 
   bool send_extended_command(uint8_t command) {
