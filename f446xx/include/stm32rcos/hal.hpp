@@ -9,6 +9,11 @@ void *get_bxcan_context(CAN_HandleTypeDef *hcan);
 void set_bxcan_context(CAN_HandleTypeDef *hcan, void *context);
 #endif
 
+#ifdef HAL_SPI_MODULE_ENABLED
+void *get_spi_context(SPI_HandleTypeDef *hspi);
+void set_spi_context(SPI_HandleTypeDef *hspi, void *context);
+#endif
+
 #ifdef HAL_UART_MODULE_ENABLED
 void *get_uart_context(UART_HandleTypeDef *huart);
 void set_uart_context(UART_HandleTypeDef *huart, void *context);

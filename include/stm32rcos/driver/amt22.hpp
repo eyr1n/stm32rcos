@@ -10,14 +10,14 @@
 namespace stm32rcos {
 namespace driver {
 
-enum class AMT21Resolution : uint8_t {
+enum class AMT22Resolution : uint8_t {
   BIT_12 = 12,
   BIT_14 = 14,
 };
 
-class AMT21 {
+class AMT22 {
 public:
-  AMT21(UART_HandleTypeDef *huart, AMT21Resolution resolution, uint8_t address)
+  AMT22(UART_HandleTypeDef *huart, AMT22Resolution resolution, uint8_t address)
       : huart_{huart}, resolution_{resolution}, address_{address} {
     set_uart_context(huart_, this);
     HAL_UART_RegisterCallback(
@@ -32,7 +32,7 @@ public:
         });
   }
 
-  ~AMT21() {
+  ~AMT22() {
     HAL_UART_Abort_IT(huart_);
     HAL_UART_UnRegisterCallback(huart_, HAL_UART_TX_COMPLETE_CB_ID);
     HAL_UART_UnRegisterCallback(huart_, HAL_UART_RX_COMPLETE_CB_ID);
@@ -103,7 +103,7 @@ private:
     return true;
   }
 
-  bool test_checksum(uint8_t l, uint8_t h) {
+  bool checksum(uint8_t l, uint8_t h) {
     bool k1 = !(bit(h, 5) ^ bit(h, 3) ^ bit(h, 1) ^ bit(l, 7) ^ bit(l, 5) ^
                 bit(l, 3) ^ bit(l, 1));
     bool k0 = !(bit(h, 4) ^ bit(h, 2) ^ bit(h, 0) ^ bit(l, 6) ^ bit(l, 4) ^
