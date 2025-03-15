@@ -2,7 +2,6 @@
 
 #include <array>
 #include <cstdint>
-#include <type_traits>
 
 #include "stm32rcos/core.hpp"
 #include "stm32rcos/hal.hpp"

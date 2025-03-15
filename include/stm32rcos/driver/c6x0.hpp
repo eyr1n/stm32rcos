@@ -3,13 +3,10 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <type_traits>
 
 #include "stm32rcos/core.hpp"
 
 #include "stm32rcos/peripheral/can.hpp"
-
-#include "encoder_base.hpp"
 
 namespace stm32rcos {
 namespace driver {
@@ -20,14 +17,14 @@ enum class C6x0Type {
 };
 
 enum class C6x0ID {
-  _1,
-  _2,
-  _3,
-  _4,
-  _5,
-  _6,
-  _7,
-  _8,
+  ID_1,
+  ID_2,
+  ID_3,
+  ID_4,
+  ID_5,
+  ID_6,
+  ID_7,
+  ID_8,
 };
 
 template <class CAN_> class C6x0;
@@ -53,9 +50,8 @@ public:
           } else if (delta < -4096) {
             delta += 8192;
           }
-          motor->set_count(motor->get_count() + delta);
+          motor->count_ += delta;
           motor->prev_count_ = count;
-
           motor->rpm_ = static_cast<int16_t>(msg.data[2] << 8 | msg.data[3]);
           motor->current_ =
               static_cast<int16_t>(msg.data[4] << 8 | msg.data[5]);
@@ -71,8 +67,8 @@ public:
     msg.dlc = 8;
     for (size_t i = 0; i < 4; ++i) {
       if (motors_[i]) {
-        msg.data[i * 2] = motors_[i]->target_current_ >> 8;
-        msg.data[i * 2 + 1] = motors_[i]->target_current_;
+        msg.data[i * 2] = motors_[i]->current_ref_ >> 8;
+        msg.data[i * 2 + 1] = motors_[i]->current_ref_;
       }
     }
     if (!can_.transmit(msg, 5)) {
@@ -82,8 +78,8 @@ public:
     msg.id = 0x1FF;
     for (size_t i = 0; i < 4; ++i) {
       if (motors_[i + 4]) {
-        msg.data[i * 2] = motors_[i + 4]->target_current_ >> 8;
-        msg.data[i * 2 + 1] = motors_[i + 4]->target_current_;
+        msg.data[i * 2] = motors_[i + 4]->current_ref_ >> 8;
+        msg.data[i * 2 + 1] = motors_[i + 4]->current_ref_;
       }
     }
     return can_.transmit(msg, 5);
@@ -97,36 +93,36 @@ private:
   friend C6x0<CAN_>;
 };
 
-template <class CAN_> class C6x0 : public EncoderBase {
+template <class CAN_> class C6x0 {
 public:
   C6x0(C6x0Manager<CAN_> &manager, C6x0Type type, C6x0ID id)
-      : EncoderBase{8192}, manager_{manager}, type_{type}, id_{id} {
+      : manager_{manager}, type_{type}, id_{id} {
     manager_.motors_[core::to_underlying(id_)] = this;
   }
 
   ~C6x0() { manager_.motors_[core::to_underlying(id_)] = nullptr; }
 
-  float get_rps() override { return get_rpm() / 60; }
+  int64_t get_count() { return count_; }
 
-  float get_rpm() override { return rpm_; }
+  float get_rpm() { return rpm_; }
 
   float get_current() {
     switch (type_) {
     case C6x0Type::C610:
       return current_;
     case C6x0Type::C620:
-      return current_ * 20000.0f / 16384.0f;
+      return current_ / 16384.0f * 20000.0f;
     }
   }
 
   void set_current(float current) {
     switch (type_) {
     case C6x0Type::C610:
-      target_current_ = std::clamp(current, -10000.0f, 10000.0f);
+      current_ref_ = std::clamp(current, -10000.0f, 10000.0f);
       break;
     case C6x0Type::C620:
-      target_current_ =
-          std::clamp(current, -20000.0f, 20000.0f) * 16384.0f / 20000.0f;
+      current_ref_ =
+          std::clamp(current, -20000.0f, 20000.0f) / 20000.0f * 16384.0f;
       break;
     }
   }
@@ -136,10 +132,11 @@ private:
   C6x0Type type_;
   C6x0ID id_;
 
+  int64_t count_ = 0;
   int16_t prev_count_ = 0;
   int16_t rpm_ = 0;
   int16_t current_ = 0;
-  int16_t target_current_ = 0;
+  int16_t current_ref_ = 0;
 
   friend C6x0Manager<CAN_>;
 };

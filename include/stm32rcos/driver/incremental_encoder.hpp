@@ -9,10 +9,10 @@
 namespace stm32rcos {
 namespace driver {
 
-class IncrementalEncoder : public EncoderBase {
+class IncrementalEncoder  {
 public:
-  IncrementalEncoder(TIM_HandleTypeDef *htim, int16_t ppr)
-      : EncoderBase{ppr * 4}, htim_{htim} {
+  IncrementalEncoder(TIM_HandleTypeDef *htim)
+      : htim_{htim} {
     HAL_TIM_Encoder_Start(htim_, TIM_CHANNEL_ALL);
   }
 
@@ -22,8 +22,9 @@ public:
     int16_t delta = __HAL_TIM_GET_COUNTER(htim_);
     __HAL_TIM_SET_COUNTER(htim_, 0);
     count_ += delta;
-    set_count(count_);
   }
+
+  int64_t get_count() { return count_; }
 
 private:
   TIM_HandleTypeDef *htim_;
