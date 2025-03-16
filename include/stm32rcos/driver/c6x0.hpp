@@ -43,19 +43,19 @@ public:
       if (0x201 <= msg.id && msg.id < 0x201 + 8) {
         C6x0<CAN_> *motor = motors_[msg.id - 0x201];
         if (motor) {
-          int16_t count = static_cast<int16_t>(msg.data[0] << 8 | msg.data[1]);
-          if (motor->prev_angle_) {
-            int16_t delta = count - *motor->prev_angle_;
+          int16_t position = static_cast<int16_t>(msg.data[0] << 8 | msg.data[1]);
+          if (motor->prev_position_) {
+            int16_t delta = position - *motor->prev_position_;
             if (delta > 4096) {
               delta -= 8192;
             } else if (delta < -4096) {
               delta += 8192;
             }
-            motor->angle_ += delta;
+            motor->position_ += delta;
           } else {
-            motor->angle_ = count;
+            motor->position_ = position;
           }
-          motor->prev_angle_ = count;
+          motor->prev_position_ = position;
           motor->rpm_ = static_cast<int16_t>(msg.data[2] << 8 | msg.data[3]);
           motor->current_ =
               static_cast<int16_t>(msg.data[4] << 8 | msg.data[5]);
@@ -103,7 +103,7 @@ public:
 
   ~C6x0() { manager_.motors_[core::to_underlying(id_)] = nullptr; }
 
-  int64_t get_angle() { return angle_; }
+  int64_t get_position() { return position_; }
 
   float get_rpm() { return rpm_; }
 
@@ -133,8 +133,8 @@ private:
   C6x0Type type_;
   C6x0ID id_;
 
-  int64_t angle_ = 0;
-  std::optional<int16_t> prev_angle_;
+  int64_t position_ = 0;
+  std::optional<int16_t> prev_position_;
   int16_t rpm_ = 0;
   int16_t current_ = 0;
   int16_t current_ref_ = 0;
