@@ -6,6 +6,8 @@ add_library(${PROJECT_NAME} INTERFACE)
 
 target_sources(${PROJECT_NAME} INTERFACE
   fdcan.cpp
+  spi.cpp
+  tim.cpp
   uart.cpp
 )
 
