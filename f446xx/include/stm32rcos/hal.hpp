@@ -14,6 +14,11 @@ void *get_spi_context(SPI_HandleTypeDef *hspi);
 void set_spi_context(SPI_HandleTypeDef *hspi, void *context);
 #endif
 
+#ifdef HAL_TIM_MODULE_ENABLED
+void *get_tim_context(TIM_HandleTypeDef *htim);
+void set_tim_context(TIM_HandleTypeDef *htim, void *context);
+#endif
+
 #ifdef HAL_UART_MODULE_ENABLED
 void *get_uart_context(UART_HandleTypeDef *huart);
 void set_uart_context(UART_HandleTypeDef *huart, void *context);
