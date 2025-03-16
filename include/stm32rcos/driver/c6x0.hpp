@@ -44,14 +44,14 @@ public:
         C6x0<CAN_> *motor = motors_[msg.id - 0x201];
         if (motor) {
           int16_t count = static_cast<int16_t>(msg.data[0] << 8 | msg.data[1]);
-          int16_t delta = count - motor->prev_count_;
+          int16_t delta = count - motor->prev_angle_;
           if (delta > 4096) {
             delta -= 8192;
           } else if (delta < -4096) {
             delta += 8192;
           }
-          motor->count_ += delta;
-          motor->prev_count_ = count;
+          motor->angle_ += delta;
+          motor->prev_angle_ = count;
           motor->rpm_ = static_cast<int16_t>(msg.data[2] << 8 | msg.data[3]);
           motor->current_ =
               static_cast<int16_t>(msg.data[4] << 8 | msg.data[5]);
@@ -61,10 +61,7 @@ public:
   }
 
   bool transmit() {
-    peripheral::CANMessage msg{};
-    msg.ide = false;
-    msg.id = 0x200;
-    msg.dlc = 8;
+    peripheral::CANMessage msg{0x200, false, 8};
     for (size_t i = 0; i < 4; ++i) {
       if (motors_[i]) {
         msg.data[i * 2] = motors_[i]->current_ref_ >> 8;
@@ -102,7 +99,7 @@ public:
 
   ~C6x0() { manager_.motors_[core::to_underlying(id_)] = nullptr; }
 
-  int64_t get_count() { return count_; }
+  int64_t get_angle() { return angle_; }
 
   float get_rpm() { return rpm_; }
 
@@ -132,8 +129,8 @@ private:
   C6x0Type type_;
   C6x0ID id_;
 
-  int64_t count_ = 0;
-  int16_t prev_count_ = 0;
+  int64_t angle_ = 0;
+  int16_t prev_angle_ = 0;
   int16_t rpm_ = 0;
   int16_t current_ = 0;
   int16_t current_ref_ = 0;
