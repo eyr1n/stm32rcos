@@ -21,6 +21,7 @@ public:
         AMT22Resolution resolution)
       : hspi_{hspi}, cs_port_{cs_port}, cs_pin_{cs_pin},
         resolution_{resolution} {
+    HAL_GPIO_WritePin(cs_port_, cs_pin_, GPIO_PIN_SET);
     set_spi_context(hspi_, this);
     HAL_SPI_RegisterCallback(
         hspi_, HAL_SPI_TX_RX_COMPLETE_CB_ID, [](SPI_HandleTypeDef *hspi) {
@@ -33,6 +34,7 @@ public:
     HAL_SPI_Abort_IT(hspi_);
     HAL_SPI_UnRegisterCallback(hspi_, HAL_SPI_TX_RX_COMPLETE_CB_ID);
     set_spi_context(hspi_, nullptr);
+    HAL_GPIO_WritePin(cs_port_, cs_pin_, GPIO_PIN_RESET);
   }
 
   std::optional<uint16_t> read_position() {
