@@ -4,15 +4,12 @@
 
 #include "stm32rcos/hal.hpp"
 
-#include "encoder_base.hpp"
-
 namespace stm32rcos {
 namespace driver {
 
-class IncrementalEncoder  {
+class IncrementalEncoder {
 public:
-  IncrementalEncoder(TIM_HandleTypeDef *htim)
-      : htim_{htim} {
+  IncrementalEncoder(TIM_HandleTypeDef *htim) : htim_{htim} {
     HAL_TIM_Encoder_Start(htim_, TIM_CHANNEL_ALL);
   }
 
@@ -21,14 +18,14 @@ public:
   void update() {
     int16_t delta = __HAL_TIM_GET_COUNTER(htim_);
     __HAL_TIM_SET_COUNTER(htim_, 0);
-    count_ += delta;
+    position_ += delta;
   }
 
-  int64_t get_count() { return count_; }
+  int64_t get_position() { return position_; }
 
 private:
   TIM_HandleTypeDef *htim_;
-  int64_t count_ = 0;
+  int64_t position_ = 0;
 };
 
 } // namespace driver
