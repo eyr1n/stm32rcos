@@ -44,13 +44,17 @@ public:
         C6x0<CAN_> *motor = motors_[msg.id - 0x201];
         if (motor) {
           int16_t count = static_cast<int16_t>(msg.data[0] << 8 | msg.data[1]);
-          int16_t delta = count - motor->prev_angle_;
-          if (delta > 4096) {
-            delta -= 8192;
-          } else if (delta < -4096) {
-            delta += 8192;
+          if (motor->prev_angle_) {
+            int16_t delta = count - *motor->prev_angle_;
+            if (delta > 4096) {
+              delta -= 8192;
+            } else if (delta < -4096) {
+              delta += 8192;
+            }
+            motor->angle_ += delta;
+          } else {
+            motor->angle_ = count;
           }
-          motor->angle_ += delta;
           motor->prev_angle_ = count;
           motor->rpm_ = static_cast<int16_t>(msg.data[2] << 8 | msg.data[3]);
           motor->current_ =
@@ -130,7 +134,7 @@ private:
   C6x0ID id_;
 
   int64_t angle_ = 0;
-  int16_t prev_angle_ = 0;
+  std::optional<int16_t> prev_angle_;
   int16_t rpm_ = 0;
   int16_t current_ = 0;
   int16_t current_ref_ = 0;
