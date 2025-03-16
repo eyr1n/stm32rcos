@@ -1,8 +1,10 @@
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 
 #include "stm32rcos/core.hpp"
 
@@ -43,7 +45,8 @@ public:
       if (0x201 <= msg.id && msg.id < 0x201 + 8) {
         C6x0<CAN_> *motor = motors_[msg.id - 0x201];
         if (motor) {
-          int16_t position = static_cast<int16_t>(msg.data[0] << 8 | msg.data[1]);
+          int16_t position =
+              static_cast<int16_t>(msg.data[0] << 8 | msg.data[1]);
           if (motor->prev_position_) {
             int16_t delta = position - *motor->prev_position_;
             if (delta > 4096) {
