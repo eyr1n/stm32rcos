@@ -8,7 +8,7 @@
 #include "stm32rcos/hal.hpp"
 
 namespace stm32rcos {
-namespace module {
+namespace driver {
 
 struct RGB {
   float r;
@@ -109,5 +109,5 @@ private:
   std::vector<uint32_t> buf_;
 };
 
-} // namespace module
+} // namespace driver
 } // namespace stm32rcos

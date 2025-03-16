@@ -48,7 +48,7 @@ public:
       HAL_UART_AbortTransmit_IT(huart_);
       return false;
     }
-    utility::TimeoutHelper timeout_helper;
+    core::TimeoutHelper timeout_helper;
     while (huart_->gState != HAL_UART_STATE_READY) {
       if (timeout_helper.is_timeout(timeout)) {
         HAL_UART_AbortTransmit_IT(huart_);
@@ -60,7 +60,7 @@ public:
   }
 
   bool receive(uint8_t *data, size_t size, uint32_t timeout) {
-    utility::TimeoutHelper timeout_helper;
+    core::TimeoutHelper timeout_helper;
     while (rx_queue_.size() < size) {
       if (timeout_helper.is_timeout(timeout)) {
         return false;

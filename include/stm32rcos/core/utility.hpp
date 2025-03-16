@@ -10,7 +10,7 @@
 #include <task.h>
 
 namespace stm32rcos {
-namespace utility {
+namespace core {
 
 template <class T>
 constexpr std::underlying_type_t<T> to_underlying(T value) noexcept {
@@ -36,5 +36,5 @@ private:
   TimeOut_t timeout_state_;
 };
 
-} // namespace utility
+} // namespace core
 } // namespace stm32rcos
