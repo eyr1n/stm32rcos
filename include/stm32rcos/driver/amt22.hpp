@@ -38,8 +38,7 @@ public:
   }
 
   std::optional<uint16_t> read_position() {
-    std::array<uint8_t, 2> command{0x00, 0x00};
-    auto res = send_command(command);
+    auto res = send_command(std::array<uint8_t, 2>{0x00, 0x00});
     if (!res) {
       return std::nullopt;
     }
@@ -48,8 +47,7 @@ public:
   }
 
   std::optional<int16_t> read_turns() {
-    std::array<uint8_t, 4> command{0x00, 0xA0, 0x00, 0x00};
-    auto res = send_command(command);
+    auto res = send_command(std::array<uint8_t, 4>{0x00, 0xA0, 0x00, 0x00});
     if (!res) {
       return std::nullopt;
     }
@@ -61,13 +59,11 @@ public:
   }
 
   bool set_zero_point() {
-    std::array<uint8_t, 2> command{0x00, 0x70};
-    return send_command(command).has_value();
+    return send_command(std::array<uint8_t, 2>{0x00, 0x70}).has_value();
   }
 
   bool reset() {
-    std::array<uint8_t, 2> command{0x00, 0x60};
-    return send_command(command).has_value();
+    return send_command(std::array<uint8_t, 2>{0x00, 0x60}).has_value();
   }
 
 private:
