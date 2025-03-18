@@ -43,7 +43,7 @@ public:
     if (!res) {
       return std::nullopt;
     }
-    return (res->at(0) << 8 | res->at(1)) &
+    return ((*res)[0] << 8 | (*res)[1]) &
            ((1 << core::to_underlying(resolution_)) - 1);
   }
 
@@ -53,7 +53,7 @@ public:
     if (!res) {
       return std::nullopt;
     }
-    int16_t turns = (res->at(2) << 8 | res->at(3)) & 0x3FFF;
+    int16_t turns = ((*res)[2] << 8 | (*res)[3]) & 0x3FFF;
     if (turns & 0x2000) {
       turns |= 0xC000;
     }

@@ -139,12 +139,12 @@ public:
   bool start(uint32_t timeout) {
     core::TimeoutHelper timeout_helper;
     while (!timeout_helper.is_timeout(timeout)) {
-      uint8_t data = 0x00;
-      if (!write_register(BNO055Register::OPR_MODE, &data, sizeof(data))) {
+      std::array<uint8_t, 1> data{0x00};
+      if (!write_register(BNO055Register::OPR_MODE, data)) {
         continue;
       }
-      data = 0x08;
-      if (!write_register(BNO055Register::OPR_MODE, &data, sizeof(data))) {
+      data[0] = 0x08;
+      if (!write_register(BNO055Register::OPR_MODE, data)) {
         continue;
       }
       return true;
@@ -153,27 +153,26 @@ public:
   }
 
   std::optional<Eigen::Quaternionf> get_quaternion() {
-    std::array<uint8_t, 8> data;
-    if (!read_register(BNO055Register::QUA_DATA_W_LSB, data.data(),
-                       data.size())) {
+    auto res = read_register<8>(BNO055Register::QUA_DATA_W_LSB);
+    if (!res) {
       return std::nullopt;
     }
     return Eigen::Quaternionf{
-        static_cast<int16_t>((data[1] << 8) | data[0]) / 16384.0f,
-        static_cast<int16_t>((data[3] << 8) | data[2]) / 16384.0f,
-        static_cast<int16_t>((data[5] << 8) | data[4]) / 16384.0f,
-        static_cast<int16_t>((data[7] << 8) | data[6]) / 16384.0f};
+        static_cast<int16_t>(((*res)[1] << 8) | (*res)[0]) / 16384.0f,
+        static_cast<int16_t>(((*res)[3] << 8) | (*res)[2]) / 16384.0f,
+        static_cast<int16_t>(((*res)[5] << 8) | (*res)[4]) / 16384.0f,
+        static_cast<int16_t>(((*res)[7] << 8) | (*res)[6]) / 16384.0f};
   }
 
-  bool write_register(BNO055Register address, const uint8_t *data,
-                      size_t size) {
-    std::array<uint8_t, 4> buf{0xAA, 0x00, core::to_underlying(address),
-                               static_cast<uint8_t>(size)};
+  template <size_t N>
+  bool write_register(BNO055Register address,
+                      const std::array<uint8_t, N> &data) {
+    std::array<uint8_t, 4> buf{0xAA, 0x00, core::to_underlying(address), N};
     uart_.flush();
     if (!uart_.transmit(buf.data(), buf.size(), 5)) {
       return false;
     }
-    if (!uart_.transmit(data, size, 5)) {
+    if (!uart_.transmit(data.data(), data.size(), 5)) {
       return false;
     }
     if (!uart_.receive(buf.data(), 2, 5)) {
@@ -182,20 +181,24 @@ public:
     return buf[0] == 0xEE && buf[1] == 0x01;
   }
 
-  bool read_register(BNO055Register address, uint8_t *data, size_t size) {
-    std::array<uint8_t, 4> buf{0xAA, 0x01, core::to_underlying(address),
-                               static_cast<uint8_t>(size)};
+  template <size_t N>
+  std::optional<std::array<uint8_t, N>> read_register(BNO055Register address) {
+    std::array<uint8_t, 4> tx_buf{0xAA, 0x01, core::to_underlying(address), N};
+    std::array<uint8_t, N> rx_buf;
     uart_.flush();
-    if (!uart_.transmit(buf.data(), 4, 5)) {
-      return false;
+    if (!uart_.transmit(tx_buf.data(), tx_buf.size(), 5)) {
+      return std::nullopt;
     }
-    if (!uart_.receive(buf.data(), 2, 5)) {
-      return false;
+    if (!uart_.receive(tx_buf.data(), 2, 5)) {
+      return std::nullopt;
     }
-    if (buf[0] != 0xBB || buf[1] != size) {
-      return false;
+    if (tx_buf[0] != 0xBB || tx_buf[1] != N) {
+      return std::nullopt;
     }
-    return uart_.receive(data, size, 5);
+    if (!uart_.receive(rx_buf.data(), rx_buf.size(), 5)) {
+      return std::nullopt;
+    }
+    return rx_buf;
   }
 
 private:
