@@ -76,11 +76,10 @@ private:
   }
 
   bool send_extended_command(uint8_t address, uint8_t command) {
-    std::array<uint8_t, 2> tx_buf{static_cast<uint8_t>(address | 0x02),
-                                  command};
+    std::array<uint8_t, 2> buf{static_cast<uint8_t>(address | 0x02), command};
     tx_sem_.try_acquire(0);
     rx_sem_.try_acquire(0);
-    if (HAL_UART_Transmit_IT(huart_, tx_buf.data(), tx_buf.size()) != HAL_OK) {
+    if (HAL_UART_Transmit_IT(huart_, buf.data(), buf.size()) != HAL_OK) {
       HAL_UART_AbortTransmit_IT(huart_);
       return false;
     }

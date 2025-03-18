@@ -38,7 +38,8 @@ public:
   }
 
   std::optional<uint16_t> read_position() {
-    auto res = send_command(std::array<uint8_t, 2>{0x00, 0x00});
+    std::array<uint8_t, 2> command{0x00, 0x00};
+    auto res = send_command(command);
     if (!res) {
       return std::nullopt;
     }
@@ -47,7 +48,8 @@ public:
   }
 
   std::optional<int16_t> read_turns() {
-    auto res = send_command(std::array<uint8_t, 4>{0x00, 0xA0, 0x00, 0x00});
+    std::array<uint8_t, 4> command{0x00, 0xA0, 0x00, 0x00};
+    auto res = send_command(command);
     if (!res) {
       return std::nullopt;
     }
@@ -59,11 +61,13 @@ public:
   }
 
   bool set_zero_point() {
-    return send_command(std::array<uint8_t, 2>{0x00, 0x70}).has_value();
+    std::array<uint8_t, 2> command{0x00, 0x70};
+    return send_command(command).has_value();
   }
 
   bool reset() {
-    return send_command(std::array<uint8_t, 2>{0x00, 0x60}).has_value();
+    std::array<uint8_t, 2> command{0x00, 0x60};
+    return send_command(command).has_value();
   }
 
 private:
@@ -76,11 +80,11 @@ private:
   template <size_t N>
   std::optional<std::array<uint8_t, N>>
   send_command(const std::array<uint8_t, N> &command) {
-    std::array<uint8_t, N> rx_buf;
+    std::array<uint8_t, N> buf;
     HAL_GPIO_WritePin(cs_port_, cs_pin_, GPIO_PIN_RESET);
     for (size_t i = 0; i < N; ++i) {
       tx_rx_sem_.try_acquire(0);
-      if (HAL_SPI_TransmitReceive_IT(hspi_, &command[i], &rx_buf[i],
+      if (HAL_SPI_TransmitReceive_IT(hspi_, &command[i], &buf[i],
                                      sizeof(uint8_t))) {
         HAL_SPI_Abort_IT(hspi_);
         return std::nullopt;
@@ -92,11 +96,11 @@ private:
     }
     HAL_GPIO_WritePin(cs_port_, cs_pin_, GPIO_PIN_SET);
     for (size_t i = 0; i < N; i += 2) {
-      if (!test_checksum(rx_buf[i], rx_buf[i + 1])) {
+      if (!test_checksum(buf[i], buf[i + 1])) {
         return std::nullopt;
       }
     }
-    return rx_buf;
+    return buf;
   }
 
   static inline bool test_checksum(uint8_t l, uint8_t h) {
