@@ -82,7 +82,7 @@ private:
   send_command(const std::array<uint8_t, N> &command) {
     std::array<uint8_t, N> buf;
     HAL_GPIO_WritePin(cs_port_, cs_pin_, GPIO_PIN_RESET);
-    for (size_t i = 0; i < N; ++i) {
+    for (size_t i = 0; i < command.size(); ++i) {
       tx_rx_sem_.try_acquire(0);
       if (HAL_SPI_TransmitReceive_IT(hspi_, &command[i], &buf[i],
                                      sizeof(uint8_t))) {
@@ -95,7 +95,7 @@ private:
       }
     }
     HAL_GPIO_WritePin(cs_port_, cs_pin_, GPIO_PIN_SET);
-    for (size_t i = 0; i < N; i += 2) {
+    for (size_t i = 0; i < buf.size(); i += 2) {
       if (!test_checksum(buf[i], buf[i + 1])) {
         return std::nullopt;
       }
