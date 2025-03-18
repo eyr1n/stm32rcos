@@ -49,16 +49,15 @@ private:
 
   std::optional<std::array<uint8_t, 2>> send_command(uint8_t address,
                                                      uint8_t command) {
-    uint8_t buf = address | command;
+    uint8_t tx_buf = address | command;
     tx_sem_.try_acquire(0);
     rx_sem_.try_acquire(0);
-    std::array<uint8_t, 2> response;
-    if (HAL_UART_Receive_DMA(huart_, response.data(), response.size()) !=
-        HAL_OK) {
+    std::array<uint8_t, 2> rx_buf;
+    if (HAL_UART_Receive_DMA(huart_, rx_buf.data(), rx_buf.size()) != HAL_OK) {
       HAL_UART_AbortReceive_IT(huart_);
       return std::nullopt;
     }
-    if (HAL_UART_Transmit_IT(huart_, &buf, sizeof(buf)) != HAL_OK) {
+    if (HAL_UART_Transmit_IT(huart_, &tx_buf, sizeof(tx_buf)) != HAL_OK) {
       HAL_UART_Abort_IT(huart_);
       return std::nullopt;
     }
@@ -70,17 +69,18 @@ private:
       HAL_UART_AbortReceive_IT(huart_);
       return std::nullopt;
     }
-    if (!test_checksum(response[0], response[1])) {
+    if (!test_checksum(rx_buf[0], rx_buf[1])) {
       return std::nullopt;
     }
-    return response;
+    return rx_buf;
   }
 
   bool send_extended_command(uint8_t address, uint8_t command) {
-    std::array<uint8_t, 2> buf{static_cast<uint8_t>(address | 0x02), command};
+    std::array<uint8_t, 2> tx_buf{static_cast<uint8_t>(address | 0x02),
+                                  command};
     tx_sem_.try_acquire(0);
     rx_sem_.try_acquire(0);
-    if (HAL_UART_Transmit_IT(huart_, buf.data(), buf.size()) != HAL_OK) {
+    if (HAL_UART_Transmit_IT(huart_, tx_buf.data(), tx_buf.size()) != HAL_OK) {
       HAL_UART_AbortTransmit_IT(huart_);
       return false;
     }
@@ -108,20 +108,20 @@ public:
       : manager_{manager}, resolution_{resolution}, address_{address} {}
 
   std::optional<uint16_t> read_position() {
-    auto response = manager_.send_command(address_, 0x00);
-    if (!response) {
+    auto res = manager_.send_command(address_, 0x00);
+    if (!res) {
       return std::nullopt;
     }
-    return (response->at(1) << 8 | response->at(0)) &
+    return (res->at(1) << 8 | res->at(0)) &
            ((1 << core::to_underlying(resolution_)) - 1);
   }
 
   std::optional<int16_t> read_turns() {
-    auto response = manager_.send_command(address_, 0x01);
-    if (!response) {
+    auto res = manager_.send_command(address_, 0x01);
+    if (!res) {
       return std::nullopt;
     }
-    int16_t turns = (response->at(1) << 8 | response->at(0)) & 0x3FFF;
+    int16_t turns = (res->at(1) << 8 | res->at(0)) & 0x3FFF;
     if (turns & 0x2000) {
       turns |= 0xC000;
     }
