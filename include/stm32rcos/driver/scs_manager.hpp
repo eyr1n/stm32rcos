@@ -129,6 +129,9 @@ private:
   }
 
   std::optional<uint8_t> check_error(uint8_t id) {
+    if (id == 0xFE) {
+      return 0;
+    }
     std::array<uint8_t, 6> buf;
     if (!uart_.receive(buf.data(), buf.size(), 5)) {
       return std::nullopt;
