@@ -61,11 +61,11 @@ private:
       HAL_UART_Abort_IT(huart_);
       return std::nullopt;
     }
-    if (!tx_sem_.try_acquire(1)) {
+    if (!tx_sem_.try_acquire(5)) {
       HAL_UART_Abort_IT(huart_);
       return std::nullopt;
     }
-    if (!rx_sem_.try_acquire(1)) {
+    if (!rx_sem_.try_acquire(5)) {
       HAL_UART_AbortReceive_IT(huart_);
       return std::nullopt;
     }
@@ -83,7 +83,7 @@ private:
       HAL_UART_AbortTransmit_IT(huart_);
       return false;
     }
-    if (!tx_sem_.try_acquire(1)) {
+    if (!tx_sem_.try_acquire(5)) {
       HAL_UART_AbortTransmit_IT(huart_);
       return false;
     }
