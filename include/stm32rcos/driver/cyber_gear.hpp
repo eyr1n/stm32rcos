@@ -77,18 +77,19 @@ public:
         std::clamp((velocity + 30.0f) / 60.0f * 65535.0f, 0.0f, 65535.0f);
     uint16_t kp_int = std::clamp(kp / 500.0f * 65535.0f, 0.0f, 65535.0f);
     uint16_t kd_int = std::clamp(kd / 5.0f * 65535.0f, 0.0f, 65535.0f);
-    std::optional<CyberGearMessage> res =
-        send_message({CommunicationType::TYPE_1,
-                      motor_can_id_,
-                      {static_cast<uint8_t>((angle_int >> 8) & 0xFF),
-                       static_cast<uint8_t>(angle_int & 0xFF),
-                       static_cast<uint8_t>((velocity_int >> 8) & 0xFF),
-                       static_cast<uint8_t>(velocity_int & 0xFF),
-                       static_cast<uint8_t>((kp_int >> 8) & 0xFF),
-                       static_cast<uint8_t>(kp_int & 0xFF),
-                       static_cast<uint8_t>((kd_int >> 8) & 0xFF),
-                       static_cast<uint8_t>(kd_int & 0xFF)},
-                      torque_int});
+
+    CyberGearMessage msg{CommunicationType::TYPE_1,
+                         motor_can_id_,
+                         {static_cast<uint8_t>((angle_int >> 8) & 0xFF),
+                          static_cast<uint8_t>(angle_int & 0xFF),
+                          static_cast<uint8_t>((velocity_int >> 8) & 0xFF),
+                          static_cast<uint8_t>(velocity_int & 0xFF),
+                          static_cast<uint8_t>((kp_int >> 8) & 0xFF),
+                          static_cast<uint8_t>(kp_int & 0xFF),
+                          static_cast<uint8_t>((kd_int >> 8) & 0xFF),
+                          static_cast<uint8_t>(kd_int & 0xFF)},
+                         torque_int};
+    auto res = send_message(msg);
     if (!res) {
       return std::nullopt;
     }
@@ -96,8 +97,9 @@ public:
   }
 
   std::optional<CyberGearFeedback> enable() {
-    std::optional<CyberGearMessage> res = send_message(
-        {CommunicationType::TYPE_3, motor_can_id_, {}, master_can_id_});
+    CyberGearMessage msg{
+        CommunicationType::TYPE_3, motor_can_id_, {}, master_can_id_};
+    auto res = send_message(msg);
     if (!res) {
       return std::nullopt;
     }
@@ -105,11 +107,11 @@ public:
   }
 
   std::optional<CyberGearFeedback> stop(bool clear_fault) {
-    std::optional<CyberGearMessage> res =
-        send_message({CommunicationType::TYPE_4,
-                      motor_can_id_,
-                      {static_cast<uint8_t>(clear_fault)},
-                      master_can_id_});
+    CyberGearMessage msg{CommunicationType::TYPE_4,
+                         motor_can_id_,
+                         {static_cast<uint8_t>(clear_fault)},
+                         master_can_id_};
+    auto res = send_message(msg);
     if (!res) {
       return std::nullopt;
     }
@@ -117,8 +119,9 @@ public:
   }
 
   std::optional<CyberGearFeedback> set_position_to_mechanical_zero() {
-    std::optional<CyberGearMessage> res = send_message(
-        {CommunicationType::TYPE_6, motor_can_id_, {1}, master_can_id_});
+    CyberGearMessage msg{
+        CommunicationType::TYPE_6, motor_can_id_, {1}, master_can_id_};
+    auto res = send_message(msg);
     if (!res) {
       return std::nullopt;
     }
@@ -128,11 +131,12 @@ public:
   template <class T>
   std::optional<T> read_parameter(CyberGearParameter parameter) {
     uint16_t index = core::to_underlying(parameter);
-    std::optional<CyberGearMessage> res = send_message(
-        {CommunicationType::TYPE_17,
-         motor_can_id_,
-         {static_cast<uint8_t>(index), static_cast<uint8_t>(index >> 8)},
-         master_can_id_});
+    CyberGearMessage msg{
+        CommunicationType::TYPE_17,
+        motor_can_id_,
+        {static_cast<uint8_t>(index), static_cast<uint8_t>(index >> 8)},
+        master_can_id_};
+    auto res = send_message(msg);
     if (!res) {
       return std::nullopt;
     }
@@ -148,13 +152,13 @@ public:
   std::optional<CyberGearFeedback> write_parameter(CyberGearParameter parameter,
                                                    T data) {
     uint16_t index = core::to_underlying(parameter);
-    CyberGearMessage msg = {
+    CyberGearMessage msg{
         CommunicationType::TYPE_18,
         motor_can_id_,
         {static_cast<uint8_t>(index), static_cast<uint8_t>(index >> 8)},
         master_can_id_};
     std::memcpy(&msg.data1[4], &data, sizeof(T));
-    std::optional<CyberGearMessage> res = send_message(msg);
+    auto res = send_message(msg);
     if (!res) {
       return std::nullopt;
     }
@@ -189,20 +193,19 @@ private:
   uint8_t master_can_id_;
 
   static inline peripheral::CANMessage
-  to_can_message(const CyberGearMessage &cyber_gear_msg) {
-    return {static_cast<uint32_t>(
-                core::to_underlying(cyber_gear_msg.type) << 24 |
-                cyber_gear_msg.data2 << 8 | cyber_gear_msg.target_address),
-            true, 8, cyber_gear_msg.data1};
+  to_can_message(const CyberGearMessage &msg) {
+    return {static_cast<uint32_t>(core::to_underlying(msg.type) << 24 |
+                                  msg.data2 << 8 | msg.target_address),
+            true, 8, msg.data1};
   }
 
   static inline std::optional<CyberGearMessage>
-  to_cyber_gear_message(const peripheral::CANMessage &can_msg) {
+  to_cyber_gear_message(const peripheral::CANMessage &msg) {
     CyberGearMessage cyber_gear_msg;
-    uint8_t type = (can_msg.id >> 24) & 0x1F;
-    cyber_gear_msg.target_address = can_msg.id & 0xFF;
-    cyber_gear_msg.data1 = can_msg.data;
-    cyber_gear_msg.data2 = (can_msg.id >> 8) & 0xFFFF;
+    uint8_t type = (msg.id >> 24) & 0x1F;
+    cyber_gear_msg.target_address = msg.id & 0xFF;
+    cyber_gear_msg.data1 = msg.data;
+    cyber_gear_msg.data2 = (msg.id >> 8) & 0xFFFF;
 
     switch (type) {
     case 0:

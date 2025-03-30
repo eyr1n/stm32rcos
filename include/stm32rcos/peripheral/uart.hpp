@@ -3,7 +3,6 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <utility>
 
 #include "stm32rcos/core.hpp"
 #include "stm32rcos/hal.hpp"
@@ -95,6 +94,9 @@ private:
   UART_HandleTypeDef *huart_;
   core::Queue<uint8_t> rx_queue_;
   uint8_t rx_buf_;
+
+  UART(const UART &) = delete;
+  UART &operator=(const UART &) = delete;
 
   static inline UART **uart_stdout() {
     static UART *uart;

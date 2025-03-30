@@ -154,6 +154,9 @@ private:
   std::vector<core::Queue<CANMessage> *> std_rx_queues_{};
   std::vector<core::Queue<CANMessage> *> ext_rx_queues_{};
 
+  FDCAN(const FDCAN &) = delete;
+  FDCAN &operator=(const FDCAN &) = delete;
+
   size_t find_std_rx_queue_index(const core::Queue<CANMessage> *queue) {
     return std::distance(
         std_rx_queues_.begin(),
