@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <cstdint>
 #include <optional>
 
 #include "stm32rcos/peripheral/uart_dma.hpp"
