@@ -58,6 +58,9 @@ private:
   std::vector<uint8_t> rx_buf_;
   size_t rx_read_idx_ = 0;
 
+  UART_DMA(const UART_DMA &) = delete;
+  UART_DMA &operator=(const UART_DMA &) = delete;
+
   size_t rx_available() {
     size_t write_idx = rx_buf_.size() - __HAL_DMA_GET_COUNTER(huart_->hdmarx);
     return (rx_buf_.size() + write_idx - rx_read_idx_) % rx_buf_.size();

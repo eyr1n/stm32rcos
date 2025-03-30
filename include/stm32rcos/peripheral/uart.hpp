@@ -96,6 +96,9 @@ private:
   core::Queue<uint8_t> rx_queue_;
   uint8_t rx_buf_;
 
+  UART(const UART &) = delete;
+  UART &operator=(const UART &) = delete;
+
   static inline UART **uart_stdout() {
     static UART *uart;
     return &uart;
