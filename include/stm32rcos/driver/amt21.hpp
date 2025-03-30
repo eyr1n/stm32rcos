@@ -4,8 +4,7 @@
 #include <cstdint>
 #include <optional>
 
-#include "stm32rcos/core.hpp"
-#include "stm32rcos/hal.hpp"
+#include "stm32rcos/peripheral/uart_dma.hpp"
 
 namespace stm32rcos {
 namespace driver {

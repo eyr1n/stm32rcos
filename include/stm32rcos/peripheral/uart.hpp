@@ -3,7 +3,6 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <utility>
 
 #include "stm32rcos/core.hpp"
 #include "stm32rcos/hal.hpp"
