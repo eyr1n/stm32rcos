@@ -8,8 +8,6 @@
 #include "stm32rcos/core.hpp"
 #include "stm32rcos/hal.hpp"
 
-extern "C" int _write(int file, char *ptr, int len);
-
 namespace stm32rcos {
 namespace peripheral {
 
