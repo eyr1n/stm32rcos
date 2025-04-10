@@ -74,6 +74,8 @@ public:
 
   void flush() { rx_queue_.clear(); }
 
+  size_t available() { return rx_queue_.size(); }
+
   bool enable_stdout() {
     if (*uart_stdout()) {
       return false;

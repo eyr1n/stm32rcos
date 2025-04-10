@@ -38,7 +38,7 @@ public:
 
   bool receive(uint8_t *data, size_t size, uint32_t timeout) {
     core::TimeoutHelper timeout_helper;
-    while (rx_available() < size) {
+    while (available() < size) {
       if (timeout_helper.is_timeout(timeout)) {
         return false;
       }
@@ -46,12 +46,17 @@ public:
     }
     for (size_t i = 0; i < size; ++i) {
       data[i] = rx_buf_[rx_read_idx_];
-      rx_advance(1);
+      advance(1);
     }
     return true;
   }
 
-  void flush() { rx_advance(rx_available()); }
+  void flush() { advance(available()); }
+
+  size_t available() {
+    size_t write_idx = rx_buf_.size() - __HAL_DMA_GET_COUNTER(huart_->hdmarx);
+    return (rx_buf_.size() + write_idx - rx_read_idx_) % rx_buf_.size();
+  }
 
 private:
   UART_HandleTypeDef *huart_;
@@ -61,12 +66,7 @@ private:
   UART_DMA(const UART_DMA &) = delete;
   UART_DMA &operator=(const UART_DMA &) = delete;
 
-  size_t rx_available() {
-    size_t write_idx = rx_buf_.size() - __HAL_DMA_GET_COUNTER(huart_->hdmarx);
-    return (rx_buf_.size() + write_idx - rx_read_idx_) % rx_buf_.size();
-  }
-
-  void rx_advance(size_t len) {
+  void advance(size_t len) {
     rx_read_idx_ = (rx_read_idx_ + len) % rx_buf_.size();
   }
 };
