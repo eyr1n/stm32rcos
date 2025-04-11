@@ -17,7 +17,7 @@ void stm32rcos::peripheral::enable_stdout(
 
 void stm32rcos::peripheral::disable_stdout() { *uart_stdout() = nullptr; }
 
-int _write(int, char *ptr, int len) {
+extern "C" int _write(int, char *ptr, int len) {
   auto uart = *uart_stdout();
   if (uart) {
     if (uart->transmit(reinterpret_cast<uint8_t *>(ptr), len, osWaitForever)) {
