@@ -15,9 +15,9 @@ public:
   virtual size_t available() = 0;
 };
 
-void enable_stdout(UARTBase &uart);
+bool enable_stdout(UARTBase &uart);
 
-void disable_stdout();
+bool disable_stdout();
 
 } // namespace peripheral
 } // namespace stm32rcos

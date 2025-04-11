@@ -10,12 +10,22 @@ static stm32rcos::peripheral::UARTBase **uart_stdout() {
   return &uart;
 }
 
-void stm32rcos::peripheral::enable_stdout(
+bool stm32rcos::peripheral::enable_stdout(
     stm32rcos::peripheral::UARTBase &uart) {
+  if (*uart_stdout()) {
+    return false;
+  }
   *uart_stdout() = &uart;
+  return true;
 }
 
-void stm32rcos::peripheral::disable_stdout() { *uart_stdout() = nullptr; }
+bool stm32rcos::peripheral::disable_stdout() {
+  if (!*uart_stdout()) {
+    return false;
+  }
+  *uart_stdout() = nullptr;
+  return true;
+}
 
 extern "C" int _write(int, char *ptr, int len) {
   auto uart = *uart_stdout();
