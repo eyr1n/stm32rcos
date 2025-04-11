@@ -8,19 +8,21 @@
 #include "stm32rcos/core.hpp"
 #include "stm32rcos/hal.hpp"
 
+#include "uart.hpp"
+
 namespace stm32rcos {
 namespace peripheral {
 
-class UART_DMA {
+class UART_DMA : public UARTBase {
 public:
   UART_DMA(UART_HandleTypeDef *huart, size_t rx_buf_size = 64)
       : huart_{huart}, rx_buf_(rx_buf_size) {
     HAL_UART_Receive_DMA(huart, rx_buf_.data(), rx_buf_.size());
   }
 
-  ~UART_DMA() { HAL_UART_Abort_IT(huart_); }
+  ~UART_DMA() override { HAL_UART_Abort_IT(huart_); }
 
-  bool transmit(const uint8_t *data, size_t size, uint32_t timeout) {
+  bool transmit(const uint8_t *data, size_t size, uint32_t timeout) override {
     if (HAL_UART_Transmit_IT(huart_, data, size) != HAL_OK) {
       HAL_UART_AbortTransmit_IT(huart_);
       return false;
@@ -36,7 +38,7 @@ public:
     return true;
   }
 
-  bool receive(uint8_t *data, size_t size, uint32_t timeout) {
+  bool receive(uint8_t *data, size_t size, uint32_t timeout) override {
     core::TimeoutHelper timeout_helper;
     while (available() < size) {
       if (timeout_helper.is_timeout(timeout)) {
@@ -51,9 +53,9 @@ public:
     return true;
   }
 
-  void flush() { advance(available()); }
+  void flush() override { advance(available()); }
 
-  size_t available() {
+  size_t available() override {
     size_t write_idx = rx_buf_.size() - __HAL_DMA_GET_COUNTER(huart_->hdmarx);
     return (rx_buf_.size() + write_idx - rx_read_idx_) % rx_buf_.size();
   }

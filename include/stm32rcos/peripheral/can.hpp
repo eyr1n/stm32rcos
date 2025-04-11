@@ -19,5 +19,16 @@ struct CANMessage {
   std::array<uint8_t, 8> data;
 };
 
+class CANBase {
+public:
+  virtual ~CANBase() {}
+  virtual bool start() = 0;
+  virtual bool stop() = 0;
+  virtual bool transmit(const CANMessage &msg, uint32_t timeout) = 0;
+  virtual bool attach_rx_queue(const CANFilter &filter,
+                               core::Queue<CANMessage> &queue) = 0;
+  virtual bool detach_rx_queue(const core::Queue<CANMessage> &queue) = 0;
+};
+
 } // namespace peripheral
 } // namespace stm32rcos

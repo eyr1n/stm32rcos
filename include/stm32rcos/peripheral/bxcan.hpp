@@ -13,7 +13,7 @@
 namespace stm32rcos {
 namespace peripheral {
 
-class BxCAN {
+class BxCAN : public CANBase {
 public:
   BxCAN(CAN_HandleTypeDef *hcan) : hcan_{hcan} {
     set_bxcan_context(hcan_, this);
@@ -39,12 +39,12 @@ public:
         });
   }
 
-  ~BxCAN() {
+  ~BxCAN() override {
     HAL_CAN_UnRegisterCallback(hcan_, HAL_CAN_RX_FIFO0_MSG_PENDING_CB_ID);
     set_bxcan_context(hcan_, nullptr);
   }
 
-  bool start() {
+  bool start() override {
     if (HAL_CAN_ActivateNotification(hcan_, CAN_IT_RX_FIFO0_MSG_PENDING) !=
         HAL_OK) {
       return false;
@@ -52,7 +52,7 @@ public:
     return HAL_CAN_Start(hcan_) == HAL_OK;
   }
 
-  bool stop() {
+  bool stop() override {
     if (HAL_CAN_Stop(hcan_) != HAL_OK) {
       return false;
     }
@@ -60,7 +60,7 @@ public:
            HAL_OK;
   }
 
-  bool transmit(const CANMessage &msg, uint32_t timeout) {
+  bool transmit(const CANMessage &msg, uint32_t timeout) override {
     CAN_TxHeaderTypeDef tx_header = create_tx_header(msg);
     uint32_t tx_mailbox;
     core::TimeoutHelper timeout_helper;
@@ -75,7 +75,7 @@ public:
   }
 
   bool attach_rx_queue(const CANFilter &filter,
-                       core::Queue<CANMessage> &queue) {
+                       core::Queue<CANMessage> &queue) override {
     size_t rx_queue_index = find_rx_queue_index(nullptr);
     if (rx_queue_index >= FILTER_BANK_SIZE) {
       return false;
@@ -89,7 +89,7 @@ public:
     return true;
   }
 
-  bool detach_rx_queue(const core::Queue<CANMessage> &queue) {
+  bool detach_rx_queue(const core::Queue<CANMessage> &queue) override {
     size_t rx_queue_index = find_rx_queue_index(&queue);
     if (rx_queue_index >= FILTER_BANK_SIZE) {
       return false;

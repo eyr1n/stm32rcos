@@ -13,7 +13,7 @@
 namespace stm32rcos {
 namespace peripheral {
 
-class FDCAN {
+class FDCAN : public CANBase {
 public:
   FDCAN(FDCAN_HandleTypeDef *hfdcan)
       : hfdcan_{hfdcan}, std_rx_queues_(hfdcan_->Init.StdFiltersNbr, nullptr),
@@ -56,12 +56,12 @@ public:
         });
   }
 
-  ~FDCAN() {
+  ~FDCAN() override {
     HAL_FDCAN_UnRegisterRxFifo0Callback(hfdcan_);
     set_fdcan_context(hfdcan_, nullptr);
   }
 
-  bool start() {
+  bool start() override {
     if (HAL_FDCAN_ConfigGlobalFilter(hfdcan_, FDCAN_REJECT, FDCAN_REJECT,
                                      FDCAN_REJECT_REMOTE,
                                      FDCAN_REJECT_REMOTE) != HAL_OK) {
@@ -74,7 +74,7 @@ public:
     return HAL_FDCAN_Start(hfdcan_) == HAL_OK;
   }
 
-  bool stop() {
+  bool stop() override {
     if (HAL_FDCAN_Stop(hfdcan_) != HAL_OK) {
       return false;
     }
@@ -82,7 +82,7 @@ public:
                hfdcan_, FDCAN_IT_RX_FIFO0_NEW_MESSAGE) == HAL_OK;
   }
 
-  bool transmit(const CANMessage &msg, uint32_t timeout) {
+  bool transmit(const CANMessage &msg, uint32_t timeout) override {
     FDCAN_TxHeaderTypeDef tx_header = create_tx_header(msg);
     core::TimeoutHelper timeout_helper;
     while (HAL_FDCAN_AddMessageToTxFifoQ(hfdcan_, &tx_header,
@@ -96,7 +96,7 @@ public:
   }
 
   bool attach_rx_queue(const CANFilter &filter,
-                       core::Queue<CANMessage> &queue) {
+                       core::Queue<CANMessage> &queue) override {
     if (filter.ide) {
       size_t rx_queue_index = find_ext_rx_queue_index(nullptr);
       if (rx_queue_index >= ext_rx_queues_.size()) {
@@ -123,7 +123,7 @@ public:
     return true;
   }
 
-  bool detach_rx_queue(const core::Queue<CANMessage> &queue) {
+  bool detach_rx_queue(const core::Queue<CANMessage> &queue) override {
     size_t rx_queue_index = find_std_rx_queue_index(&queue);
     if (rx_queue_index < std_rx_queues_.size()) {
       FDCAN_FilterTypeDef filter_config{};
