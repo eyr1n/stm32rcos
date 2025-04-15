@@ -10,6 +10,7 @@
 
 namespace stm32rcos {
 namespace peripheral {
+namespace internal {
 
 template <> class UartTx<UartType::Dma> {
 public:
@@ -76,5 +77,6 @@ private:
   }
 };
 
+} // namespace internal
 } // namespace peripheral
 } // namespace stm32rcos

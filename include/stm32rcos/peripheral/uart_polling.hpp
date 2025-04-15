@@ -9,6 +9,7 @@
 
 namespace stm32rcos {
 namespace peripheral {
+namespace internal {
 
 template <> class UartTx<UartType::Polling> {
 public:
@@ -38,5 +39,6 @@ private:
   UART_HandleTypeDef *huart_;
 };
 
+} // namespace internal
 } // namespace peripheral
 } // namespace stm32rcos

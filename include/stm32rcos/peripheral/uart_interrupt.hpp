@@ -10,6 +10,7 @@
 
 namespace stm32rcos {
 namespace peripheral {
+namespace internal {
 
 template <> class UartTx<UartType::Interrupt> {
 public:
@@ -89,5 +90,6 @@ private:
   uint8_t rx_buf_;
 };
 
+} // namespace internal
 } // namespace peripheral
 } // namespace stm32rcos

@@ -25,9 +25,12 @@ enum class UartType {
   Dma,
 };
 
-template <UartType Tx> class UartTx;
+namespace internal {
 
+template <UartType Tx> class UartTx;
 template <UartType Rx> class UartRx;
+
+} // namespace internal
 
 template <UartType Tx = UartType::Interrupt, UartType Rx = UartType::Interrupt>
 class Uart : public UartBase {
@@ -48,8 +51,8 @@ public:
   size_t available() { return rx_.available(); }
 
 private:
-  UartTx<Tx> tx_;
-  UartRx<Rx> rx_;
+  internal::UartTx<Tx> tx_;
+  internal::UartRx<Rx> rx_;
 };
 
 } // namespace peripheral
