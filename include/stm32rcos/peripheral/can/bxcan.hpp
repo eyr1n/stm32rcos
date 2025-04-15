@@ -32,7 +32,7 @@ public:
             core::Queue<CanMessage> *rx_queue =
                 bxcan->rx_queues_[rx_header.FilterMatchIndex];
             if (rx_queue) {
-              Can::update_rx_message(msg, rx_header);
+              update_rx_message(msg, rx_header);
               rx_queue->push(msg, 0);
             }
           }

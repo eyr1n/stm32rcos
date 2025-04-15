@@ -35,20 +35,20 @@ public:
               if (rx_header.FilterIndex >= fdcan->std_rx_queues_.size()) {
                 continue;
               }
-              core::Queue<CANMessage> *rx_queue =
+              core::Queue<CanMessage> *rx_queue =
                   fdcan->std_rx_queues_[rx_header.FilterIndex];
               if (rx_queue) {
-                FDCAN::update_rx_message(msg, rx_header);
+                update_rx_message(msg, rx_header);
                 rx_queue->push(msg, 0);
               }
             } else if (rx_header.IdType == FDCAN_EXTENDED_ID) {
               if (rx_header.FilterIndex >= fdcan->ext_rx_queues_.size()) {
                 continue;
               }
-              core::Queue<CANMessage> *rx_queue =
+              core::Queue<CanMessage> *rx_queue =
                   fdcan->ext_rx_queues_[rx_header.FilterIndex];
               if (rx_queue) {
-                FDCAN::update_rx_message(msg, rx_header);
+                update_rx_message(msg, rx_header);
                 rx_queue->push(msg, 0);
               }
             }
@@ -123,7 +123,7 @@ public:
     return true;
   }
 
-  bool detach_rx_queue(const core::Queue<CANMessage> &queue) override {
+  bool detach_rx_queue(const core::Queue<CanMessage> &queue) override {
     size_t rx_queue_index = find_std_rx_queue_index(&queue);
     if (rx_queue_index < std_rx_queues_.size()) {
       FDCAN_FilterTypeDef filter_config{};
@@ -157,13 +157,13 @@ private:
   Can(const Can &) = delete;
   Can &operator=(const Can &) = delete;
 
-  size_t find_std_rx_queue_index(const core::Queue<CANMessage> *queue) {
+  size_t find_std_rx_queue_index(const core::Queue<CanMessage> *queue) {
     return std::distance(
         std_rx_queues_.begin(),
         std::find(std_rx_queues_.begin(), std_rx_queues_.end(), queue));
   }
 
-  size_t find_ext_rx_queue_index(const core::Queue<CANMessage> *queue) {
+  size_t find_ext_rx_queue_index(const core::Queue<CanMessage> *queue) {
     return std::distance(
         ext_rx_queues_.begin(),
         std::find(ext_rx_queues_.begin(), ext_rx_queues_.end(), queue));
