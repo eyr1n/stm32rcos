@@ -3,6 +3,8 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "stm32rcos/hal.hpp"
+
 namespace stm32rcos {
 namespace peripheral {
 
