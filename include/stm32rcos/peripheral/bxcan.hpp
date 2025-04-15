@@ -13,14 +13,14 @@
 namespace stm32rcos {
 namespace peripheral {
 
-class BxCAN : public CANBase {
+class BxCAN : public CanBase {
 public:
   BxCAN(CAN_HandleTypeDef *hcan) : hcan_{hcan} {
     hal::set_bxcan_context(hcan_, this);
     HAL_CAN_RegisterCallback(
         hcan_, HAL_CAN_RX_FIFO0_MSG_PENDING_CB_ID, [](CAN_HandleTypeDef *hcan) {
           static CAN_RxHeaderTypeDef rx_header;
-          static CANMessage msg;
+          static CanMessage msg;
 
           auto bxcan = reinterpret_cast<BxCAN *>(hal::get_bxcan_context(hcan));
 
@@ -29,7 +29,7 @@ public:
             if (rx_header.FilterMatchIndex >= BxCAN::FILTER_BANK_SIZE) {
               continue;
             }
-            core::Queue<CANMessage> *rx_queue =
+            core::Queue<CanMessage> *rx_queue =
                 bxcan->rx_queues_[rx_header.FilterMatchIndex];
             if (rx_queue) {
               BxCAN::update_rx_message(msg, rx_header);
@@ -60,7 +60,7 @@ public:
            HAL_OK;
   }
 
-  bool transmit(const CANMessage &msg, uint32_t timeout) override {
+  bool transmit(const CanMessage &msg, uint32_t timeout) override {
     CAN_TxHeaderTypeDef tx_header = create_tx_header(msg);
     uint32_t tx_mailbox;
     core::TimeoutHelper timeout_helper;
@@ -74,8 +74,8 @@ public:
     return true;
   }
 
-  bool attach_rx_queue(const CANFilter &filter,
-                       core::Queue<CANMessage> &queue) override {
+  bool attach_rx_queue(const CanFilter &filter,
+                       core::Queue<CanMessage> &queue) override {
     size_t rx_queue_index = find_rx_queue_index(nullptr);
     if (rx_queue_index >= FILTER_BANK_SIZE) {
       return false;
@@ -89,7 +89,7 @@ public:
     return true;
   }
 
-  bool detach_rx_queue(const core::Queue<CANMessage> &queue) override {
+  bool detach_rx_queue(const core::Queue<CanMessage> &queue) override {
     size_t rx_queue_index = find_rx_queue_index(&queue);
     if (rx_queue_index >= FILTER_BANK_SIZE) {
       return false;
@@ -109,12 +109,12 @@ private:
   static constexpr uint32_t FILTER_BANK_SIZE = 14;
 
   CAN_HandleTypeDef *hcan_;
-  std::array<core::Queue<CANMessage> *, FILTER_BANK_SIZE> rx_queues_{};
+  std::array<core::Queue<CanMessage> *, FILTER_BANK_SIZE> rx_queues_{};
 
   BxCAN(const BxCAN &) = delete;
   BxCAN &operator=(const BxCAN &) = delete;
 
-  size_t find_rx_queue_index(const core::Queue<CANMessage> *queue) {
+  size_t find_rx_queue_index(const core::Queue<CanMessage> *queue) {
     return std::distance(
         rx_queues_.begin(),
         std::find(rx_queues_.begin(), rx_queues_.end(), queue));
@@ -131,7 +131,7 @@ private:
     return rx_queue_index;
   }
 
-  static inline CAN_FilterTypeDef create_filter_config(const CANFilter &filter,
+  static inline CAN_FilterTypeDef create_filter_config(const CanFilter &filter,
                                                        uint32_t filter_index) {
     CAN_FilterTypeDef filter_config{};
     if (filter.ide) {
@@ -154,7 +154,7 @@ private:
     return filter_config;
   }
 
-  static inline CAN_TxHeaderTypeDef create_tx_header(const CANMessage &msg) {
+  static inline CAN_TxHeaderTypeDef create_tx_header(const CanMessage &msg) {
     CAN_TxHeaderTypeDef tx_header{};
     if (msg.ide) {
       tx_header.ExtId = msg.id;
@@ -169,7 +169,7 @@ private:
     return tx_header;
   }
 
-  static inline void update_rx_message(CANMessage &msg,
+  static inline void update_rx_message(CanMessage &msg,
                                        const CAN_RxHeaderTypeDef &rx_header) {
     switch (rx_header.IDE) {
     case CAN_ID_STD:

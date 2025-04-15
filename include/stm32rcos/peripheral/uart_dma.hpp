@@ -13,7 +13,7 @@
 namespace stm32rcos {
 namespace peripheral {
 
-class UART_DMA : public UARTBase {
+class UART_DMA : public UartBase {
 public:
   UART_DMA(UART_HandleTypeDef *huart, size_t rx_buf_size = 64)
       : huart_{huart}, rx_buf_(rx_buf_size) {

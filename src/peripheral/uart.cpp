@@ -4,13 +4,13 @@
 
 #ifdef HAL_UART_MODULE_ENABLED
 
-static stm32rcos::peripheral::UARTBase **uart_stdout() {
-  static stm32rcos::peripheral::UARTBase *uart;
+static stm32rcos::peripheral::UartBase **uart_stdout() {
+  static stm32rcos::peripheral::UartBase *uart;
   return &uart;
 }
 
 bool stm32rcos::peripheral::enable_stdout(
-    stm32rcos::peripheral::UARTBase &uart) {
+    stm32rcos::peripheral::UartBase &uart) {
   if (*uart_stdout()) {
     return false;
   }

@@ -12,7 +12,7 @@
 namespace stm32rcos {
 namespace peripheral {
 
-class UART_IT : public UARTBase {
+class UART_IT : public UartBase {
 public:
   UART_IT(UART_HandleTypeDef *huart, size_t rx_queue_size = 64)
       : huart_{huart}, rx_queue_{rx_queue_size} {

@@ -13,7 +13,7 @@
 namespace stm32rcos {
 namespace peripheral {
 
-class FDCAN : public CANBase {
+class FDCAN : public CanBase {
 public:
   FDCAN(FDCAN_HandleTypeDef *hfdcan)
       : hfdcan_{hfdcan}, std_rx_queues_(hfdcan_->Init.StdFiltersNbr, nullptr),
@@ -22,7 +22,7 @@ public:
     HAL_FDCAN_RegisterRxFifo0Callback(hfdcan_, [](FDCAN_HandleTypeDef *hfdcan,
                                                   uint32_t) {
       static FDCAN_RxHeaderTypeDef rx_header;
-      static CANMessage msg;
+      static CanMessage msg;
 
       auto fdcan = reinterpret_cast<FDCAN *>(hal::get_fdcan_context(hfdcan));
 
@@ -82,7 +82,7 @@ public:
                hfdcan_, FDCAN_IT_RX_FIFO0_NEW_MESSAGE) == HAL_OK;
   }
 
-  bool transmit(const CANMessage &msg, uint32_t timeout) override {
+  bool transmit(const CanMessage &msg, uint32_t timeout) override {
     FDCAN_TxHeaderTypeDef tx_header = create_tx_header(msg);
     core::TimeoutHelper timeout_helper;
     while (HAL_FDCAN_AddMessageToTxFifoQ(hfdcan_, &tx_header,
@@ -95,8 +95,8 @@ public:
     return true;
   }
 
-  bool attach_rx_queue(const CANFilter &filter,
-                       core::Queue<CANMessage> &queue) override {
+  bool attach_rx_queue(const CanFilter &filter,
+                       core::Queue<CanMessage> &queue) override {
     if (filter.ide) {
       size_t rx_queue_index = find_ext_rx_queue_index(nullptr);
       if (rx_queue_index >= ext_rx_queues_.size()) {
@@ -151,8 +151,8 @@ public:
 
 private:
   FDCAN_HandleTypeDef *hfdcan_;
-  std::vector<core::Queue<CANMessage> *> std_rx_queues_{};
-  std::vector<core::Queue<CANMessage> *> ext_rx_queues_{};
+  std::vector<core::Queue<CanMessage> *> std_rx_queues_{};
+  std::vector<core::Queue<CanMessage> *> ext_rx_queues_{};
 
   FDCAN(const FDCAN &) = delete;
   FDCAN &operator=(const FDCAN &) = delete;
@@ -170,7 +170,7 @@ private:
   }
 
   static inline FDCAN_FilterTypeDef
-  create_filter_config(const CANFilter &filter, uint32_t filter_index) {
+  create_filter_config(const CanFilter &filter, uint32_t filter_index) {
     FDCAN_FilterTypeDef filter_config{};
     if (filter.ide) {
       filter_config.IdType = FDCAN_EXTENDED_ID;
@@ -185,7 +185,7 @@ private:
     return filter_config;
   }
 
-  static inline FDCAN_TxHeaderTypeDef create_tx_header(const CANMessage &msg) {
+  static inline FDCAN_TxHeaderTypeDef create_tx_header(const CanMessage &msg) {
     FDCAN_TxHeaderTypeDef tx_header{};
     tx_header.Identifier = msg.id;
     if (msg.ide) {
@@ -231,7 +231,7 @@ private:
     return tx_header;
   }
 
-  static inline void update_rx_message(CANMessage &msg,
+  static inline void update_rx_message(CanMessage &msg,
                                        const FDCAN_RxHeaderTypeDef &rx_header) {
     msg.id = rx_header.Identifier;
     if (rx_header.IdType == FDCAN_STANDARD_ID) {
