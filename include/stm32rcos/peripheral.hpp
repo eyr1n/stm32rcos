@@ -1,7 +1,7 @@
 #pragma once
 
-#include "peripheral/can.hpp"
-#include "peripheral/uart.hpp"
+#include "peripheral/can_base.hpp"
+#include "peripheral/uart_base.hpp"
 
 #ifdef HAL_CAN_MODULE_ENABLED
 #include "peripheral/bxcan.hpp"
