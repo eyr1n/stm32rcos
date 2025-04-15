@@ -35,9 +35,8 @@ target_link_libraries(${PROJECT_NAME}_printf_float INTERFACE
 find_package(Python REQUIRED COMPONENTS Interpreter)
 add_custom_command(
   OUTPUT ${DEVICE_SPECIFIC_SOURCES}
-  COMMAND 
-    ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/device_specific_sources.py 
-      ${CMAKE_SOURCE_DIR}/Drivers/CMSIS/Device device
+  COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/device_specific_sources.py 
+    ${CMAKE_SOURCE_DIR}/Drivers/CMSIS/Device device
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/device_specific_sources.py
   VERBATIM
 )
