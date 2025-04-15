@@ -1,16 +1,16 @@
 #include "stm32rcos/hal.hpp"
 
+#include "macro.hpp"
+
 #ifdef HAL_FDCAN_MODULE_ENABLED
 
 static void **fdcan_context(FDCAN_HandleTypeDef *hfdcan) {
-  if (hfdcan->Instance == FDCAN1) {
-    static void *context;
-    return &context;
-  }
-  if (hfdcan->Instance == FDCAN2) {
-    static void *context;
-    return &context;
-  }
+#ifdef FDCAN1
+  DECLARE_CONTEXT(hcan, FDCAN1);
+#endif
+#ifdef FDCAN2
+  DECLARE_CONTEXT(hcan, FDCAN2);
+#endif
   __builtin_unreachable();
 }
 

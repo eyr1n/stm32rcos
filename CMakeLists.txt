@@ -4,22 +4,19 @@ project(stm32rcos LANGUAGES CXX)
 
 # stm32rcos
 add_library(${PROJECT_NAME} OBJECT
-  src/uart.cpp
+  src/hal/bxcan.cpp
+  src/hal/spi.cpp
+  src/hal/tim.cpp
+  src/hal/uart.cpp
+  src/peripheral/uart.cpp
 )
 target_link_libraries(${PROJECT_NAME} PUBLIC
-  stm32cubemx
   STM32_Drivers
   FreeRTOS
 )
 target_include_directories(${PROJECT_NAME} PUBLIC
   include
 )
-
-# MCUs
-add_subdirectory(f103xx)
-add_subdirectory(f303xx)
-add_subdirectory(f446xx)
-add_subdirectory(h743xx)
 
 # stm32rcos::printf_float
 add_library(${PROJECT_NAME}_printf_float INTERFACE)

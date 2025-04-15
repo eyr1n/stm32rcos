@@ -1,9 +1,8 @@
 #include "stm32rcos/core.hpp"
 #include "stm32rcos/hal.hpp"
+#include "stm32rcos/peripheral.hpp"
 
 #ifdef HAL_UART_MODULE_ENABLED
-
-#include "stm32rcos/peripheral/uart.hpp"
 
 static stm32rcos::peripheral::UARTBase **uart_stdout() {
   static stm32rcos::peripheral::UARTBase *uart;

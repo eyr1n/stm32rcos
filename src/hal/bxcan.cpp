@@ -1,16 +1,19 @@
 #include "stm32rcos/hal.hpp"
 
+#include "macro.hpp"
+
 #ifdef HAL_CAN_MODULE_ENABLED
 
 static void **bxcan_context(CAN_HandleTypeDef *hcan) {
-  if (hcan->Instance == CAN1) {
-    static void *context;
-    return &context;
-  }
-  if (hcan->Instance == CAN2) {
-    static void *context;
-    return &context;
-  }
+#ifdef CAN
+  DECLARE_CONTEXT(hcan, CAN);
+#endif
+#ifdef CAN1
+  DECLARE_CONTEXT(hcan, CAN1);
+#endif
+#ifdef CAN2
+  DECLARE_CONTEXT(hcan, CAN2);
+#endif
   __builtin_unreachable();
 }
 
