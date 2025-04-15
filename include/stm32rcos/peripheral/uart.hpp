@@ -1,6 +1,6 @@
 #pragma once
 
-#include "uart/uart_base.hpp"
+#include "uart/uart.hpp"
 
 #ifdef HAL_UART_MODULE_ENABLED
 #include "uart/uart_dma.hpp"

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "can/can_base.hpp"
+#include "can/can.hpp"
 
 #ifdef HAL_CAN_MODULE_ENABLED
 #include "can/bxcan.hpp"
