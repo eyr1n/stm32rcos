@@ -5,24 +5,24 @@
 
 #include "stm32rcos/hal.hpp"
 
-#include "impl/stdout.hpp"
-#include "impl/uart_base.hpp"
+#include "uart/stdout.hpp"
+#include "uart/uart.hpp"
 
 #ifdef HAL_UART_MODULE_ENABLED
-#include "impl/uart_dma.hpp"
-#include "impl/uart_it.hpp"
-#include "impl/uart_poll.hpp"
+#include "uart/internal/uart_dma.hpp"
+#include "uart/internal/uart_it.hpp"
+#include "uart/internal/uart_poll.hpp"
 #endif
 
 namespace stm32rcos {
 namespace peripheral {
 
-namespace detail {
+namespace internal {
 
 template <UartType TxType> class UartTx;
 template <UartType RxType> class UartRx;
 
-} // namespace detail
+} // namespace internal
 
 template <UartType TxType = UartType::IT, UartType RxType = UartType::IT>
 class Uart : public UartBase {
@@ -43,8 +43,8 @@ public:
   size_t available() { return rx_.available(); }
 
 private:
-  detail::UartTx<TxType> tx_;
-  detail::UartRx<RxType> rx_;
+  internal::UartTx<TxType> tx_;
+  internal::UartRx<RxType> rx_;
 };
 
 } // namespace peripheral

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "uart_base.hpp"
+#include "uart.hpp"
 
 namespace stm32rcos {
 namespace peripheral {

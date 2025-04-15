@@ -6,11 +6,11 @@
 #include "stm32rcos/core.hpp"
 #include "stm32rcos/hal.hpp"
 
-#include "uart_base.hpp"
+#include "../uart.hpp"
 
 namespace stm32rcos {
 namespace peripheral {
-namespace detail {
+namespace internal {
 
 template <UartType TxType> class UartTx;
 template <UartType RxType> class UartRx;
@@ -99,6 +99,6 @@ private:
   UartRx &operator=(const UartRx &) = delete;
 };
 
-} // namespace detail
+} // namespace internal
 } // namespace peripheral
 } // namespace stm32rcos

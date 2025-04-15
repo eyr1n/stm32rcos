@@ -2,14 +2,14 @@
 
 #include "stm32rcos/hal.hpp"
 
-#include "impl/can_base.hpp"
+#include "can/can.hpp"
 
 #ifdef HAL_CAN_MODULE_ENABLED
-#include "impl/bxcan.hpp"
+#include "can/impl/bxcan.hpp"
 #endif
 
 #ifdef HAL_FDCAN_MODULE_ENABLED
-#include "impl/fdcan.hpp"
+#include "can/impl/fdcan.hpp"
 #endif
 
 namespace stm32rcos {
