@@ -5,11 +5,11 @@
 #include "can/can.hpp"
 
 #ifdef HAL_CAN_MODULE_ENABLED
-#include "can/impl/bxcan.hpp"
+#include "can/bxcan.hpp"
 #endif
 
 #ifdef HAL_FDCAN_MODULE_ENABLED
-#include "can/impl/fdcan.hpp"
+#include "can/fdcan.hpp"
 #endif
 
 namespace stm32rcos {
