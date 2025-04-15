@@ -1,5 +1,7 @@
 add_library(${PROJECT_NAME}_h743xx INTERFACE)
 
+add_library(${PROJECT_NAME}::h743xx ALIAS ${PROJECT_NAME}_h743xx)
+
 target_sources(${PROJECT_NAME}_h743xx INTERFACE
   fdcan.cpp
   spi.cpp

@@ -17,11 +17,6 @@ add_subdirectory(f303xx)
 add_subdirectory(f446xx)
 add_subdirectory(h743xx)
 
-add_library(stm32rcos::f103xx ALIAS ${PROJECT_NAME}_f103xx)
-add_library(stm32rcos::f303xx ALIAS ${PROJECT_NAME}_f303xx)
-add_library(stm32rcos::f446xx ALIAS ${PROJECT_NAME}_f446xx)
-add_library(stm32rcos::h743xx ALIAS ${PROJECT_NAME}_h743xx)
-
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
   set(DOXYGEN_EXTRACT_ALL YES)
