@@ -21,9 +21,5 @@ public:
   virtual size_t available() = 0;
 };
 
-bool enable_stdout(UartBase &uart);
-
-bool disable_stdout();
-
 } // namespace peripheral
 } // namespace stm32rcos
