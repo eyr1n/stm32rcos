@@ -37,6 +37,9 @@ public:
 
 private:
   UART_HandleTypeDef *huart_;
+
+  UartTx(const UartTx &) = delete;
+  UartTx &operator=(const UartTx &) = delete;
 };
 
 template <> class UartRx<UartType::IT> {
@@ -91,6 +94,9 @@ private:
   UART_HandleTypeDef *huart_;
   core::Queue<uint8_t> rx_queue_;
   uint8_t rx_buf_;
+
+  UartRx(const UartRx &) = delete;
+  UartRx &operator=(const UartRx &) = delete;
 };
 
 } // namespace internal

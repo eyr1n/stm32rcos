@@ -24,6 +24,9 @@ public:
 
 private:
   UART_HandleTypeDef *huart_;
+
+  UartTx(const UartTx &) = delete;
+  UartTx &operator=(const UartTx &) = delete;
 };
 
 template <> class UartRx<UartType::POLL> {
@@ -40,6 +43,9 @@ public:
 
 private:
   UART_HandleTypeDef *huart_;
+
+  UartRx(const UartRx &) = delete;
+  UartRx &operator=(const UartRx &) = delete;
 };
 
 } // namespace internal

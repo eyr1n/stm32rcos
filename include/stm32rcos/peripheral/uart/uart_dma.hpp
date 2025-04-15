@@ -38,6 +38,9 @@ public:
 
 private:
   UART_HandleTypeDef *huart_;
+
+  UartTx(const UartTx &) = delete;
+  UartTx &operator=(const UartTx &) = delete;
 };
 
 template <> class UartRx<UartType::DMA> {
@@ -75,6 +78,9 @@ private:
   UART_HandleTypeDef *huart_;
   std::vector<uint8_t> rx_buf_;
   size_t rx_read_idx_ = 0;
+
+  UartRx(const UartRx &) = delete;
+  UartRx &operator=(const UartRx &) = delete;
 
   void advance(size_t len) {
     rx_read_idx_ = (rx_read_idx_ + len) % rx_buf_.size();
