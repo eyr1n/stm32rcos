@@ -16,7 +16,7 @@ FetchContent_Declare(stm32rcos
 FetchContent_MakeAvailable(stm32rcos)
 
 target_link_libraries(${PROJECT_NAME}
-    stm32rcos
-    stm32rcos::f446xx  # MCUの型番に応じて変更する
+  stm32rcos
+  stm32rcos::printf_float  # Flash容量を気にする場合は付けないほうがいい
 )
 ```
