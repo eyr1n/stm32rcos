@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "stm32rcos/core.hpp"
 #include "stm32rcos/hal.hpp"
 
 #include "uart_base.hpp"

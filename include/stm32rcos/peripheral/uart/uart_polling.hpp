@@ -25,7 +25,7 @@ private:
 
 template <> class UartRx<UartType::Polling> {
 public:
-  UartRx(UART_HandleTypeDef *huart, size_t rx_buf_size) : huart_{huart} {}
+  UartRx(UART_HandleTypeDef *huart, size_t) : huart_{huart} {}
 
   bool receive(uint8_t *data, size_t size, uint32_t timeout) {
     return HAL_UART_Receive(huart_, data, size, timeout);
