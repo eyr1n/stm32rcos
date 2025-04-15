@@ -4,6 +4,6 @@
 
 #ifdef HAL_UART_MODULE_ENABLED
 #include "uart/uart_dma.hpp"
-#include "uart/uart_interrupt.hpp"
-#include "uart/uart_polling.hpp"
+#include "uart/uart_it.hpp"
+#include "uart/uart_poll.hpp"
 #endif

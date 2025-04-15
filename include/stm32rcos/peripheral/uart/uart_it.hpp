@@ -12,7 +12,7 @@ namespace stm32rcos {
 namespace peripheral {
 namespace internal {
 
-template <> class UartTx<UartType::Interrupt> {
+template <> class UartTx<UartType::IT> {
 public:
   UartTx(UART_HandleTypeDef *huart) : huart_{huart} {}
 
@@ -36,7 +36,7 @@ private:
   UART_HandleTypeDef *huart_;
 };
 
-template <> class UartRx<UartType::Interrupt> {
+template <> class UartRx<UartType::IT> {
 public:
   UartRx(UART_HandleTypeDef *huart, size_t rx_buf_size)
       : huart_{huart}, rx_queue_{rx_buf_size} {

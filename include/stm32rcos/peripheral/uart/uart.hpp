@@ -22,9 +22,9 @@ bool enable_stdout(UartBase &uart);
 bool disable_stdout();
 
 enum class UartType {
-  Polling,
-  Interrupt,
-  Dma,
+  POLL,
+  IT,
+  DMA,
 };
 
 namespace internal {
@@ -34,8 +34,7 @@ template <UartType RxType> class UartRx;
 
 } // namespace internal
 
-template <UartType TxType = UartType::Interrupt,
-          UartType RxType = UartType::Interrupt>
+template <UartType TxType = UartType::IT, UartType RxType = UartType::IT>
 class Uart : public UartBase {
 public:
   Uart(UART_HandleTypeDef *huart, size_t rx_buf_size = 64)

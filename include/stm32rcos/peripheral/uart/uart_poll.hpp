@@ -11,7 +11,7 @@ namespace stm32rcos {
 namespace peripheral {
 namespace internal {
 
-template <> class UartTx<UartType::Polling> {
+template <> class UartTx<UartType::POLL> {
 public:
   UartTx(UART_HandleTypeDef *huart) : huart_{huart} {}
 
@@ -23,7 +23,7 @@ private:
   UART_HandleTypeDef *huart_;
 };
 
-template <> class UartRx<UartType::Polling> {
+template <> class UartRx<UartType::POLL> {
 public:
   UartRx(UART_HandleTypeDef *huart, size_t) : huart_{huart} {}
 
