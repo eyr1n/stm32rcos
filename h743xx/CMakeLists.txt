@@ -1,14 +1,9 @@
-add_library(${PROJECT_NAME}_h743xx INTERFACE)
-
-add_library(${PROJECT_NAME}::h743xx ALIAS ${PROJECT_NAME}_h743xx)
-
-target_sources(${PROJECT_NAME}_h743xx INTERFACE
-  fdcan.cpp
-  spi.cpp
-  tim.cpp
-  uart.cpp
-)
-
-target_include_directories(${PROJECT_NAME}_h743xx INTERFACE
-  include
-)
+get_target_property(defs stm32cubemx INTERFACE_COMPILE_DEFINITIONS)
+if("STM32H743xx" IN_LIST defs)
+  target_sources(${PROJECT_NAME} PRIVATE
+    fdcan.cpp
+    spi.cpp
+    tim.cpp
+    uart.cpp
+  )
+endif()

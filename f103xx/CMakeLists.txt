@@ -1,14 +1,9 @@
-add_library(${PROJECT_NAME}_f103xx INTERFACE)
-
-add_library(${PROJECT_NAME}::f103xx ALIAS ${PROJECT_NAME}_f103xx)
-
-target_sources(${PROJECT_NAME}_f103xx INTERFACE
-  bxcan.cpp
-  spi.cpp
-  tim.cpp
-  uart.cpp
-)
-
-target_include_directories(${PROJECT_NAME}_f103xx INTERFACE
-  include
-)
+get_target_property(defs stm32cubemx INTERFACE_COMPILE_DEFINITIONS)
+if("STM32F103xx" IN_LIST defs)
+  target_sources(${PROJECT_NAME} PRIVATE
+    bxcan.cpp
+    spi.cpp
+    tim.cpp
+    uart.cpp
+  )
+endif()

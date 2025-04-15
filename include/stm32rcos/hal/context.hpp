@@ -1,12 +1,18 @@
 #pragma once
 
-#include <stm32f3xx_hal.h>
+#include "driver.hpp"
 
 namespace stm32rcos {
+// namespace hal {
 
 #ifdef HAL_CAN_MODULE_ENABLED
 void *get_bxcan_context(CAN_HandleTypeDef *hcan);
 void set_bxcan_context(CAN_HandleTypeDef *hcan, void *context);
+#endif
+
+#ifdef HAL_FDCAN_MODULE_ENABLED
+void *get_fdcan_context(FDCAN_HandleTypeDef *hfdcan);
+void set_fdcan_context(FDCAN_HandleTypeDef *hfdcan, void *context);
 #endif
 
 #ifdef HAL_SPI_MODULE_ENABLED
@@ -24,4 +30,5 @@ void *get_uart_context(UART_HandleTypeDef *huart);
 void set_uart_context(UART_HandleTypeDef *huart, void *context);
 #endif
 
+// } // namespace hal
 } // namespace stm32rcos
