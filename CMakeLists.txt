@@ -15,6 +15,7 @@ add_library(${PROJECT_NAME} OBJECT
   ${DEVICE_SPECIFIC_SOURCES}
   src/peripheral/uart.cpp
 )
+target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_23)
 target_link_libraries(${PROJECT_NAME} PUBLIC
   STM32_Drivers
   FreeRTOS
