@@ -4,7 +4,6 @@
 #include "peripheral/uart.hpp"
 
 #ifdef HAL_CAN_MODULE_ENABLED
-
 #include "peripheral/bxcan.hpp"
 #endif
 
