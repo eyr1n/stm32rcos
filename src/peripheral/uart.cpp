@@ -1,6 +1,6 @@
+#include "stm32rcos/peripheral/uart.hpp"
 #include "stm32rcos/core.hpp"
 #include "stm32rcos/hal.hpp"
-#include "stm32rcos/peripheral.hpp"
 
 #ifdef HAL_UART_MODULE_ENABLED
 
