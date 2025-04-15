@@ -1,7 +1,7 @@
 #pragma once
 
-#include "peripheral/can_base.hpp"
-#include "peripheral/uart_base.hpp"
+#include "peripheral/can.hpp"
+#include "peripheral/uart.hpp"
 
 #ifdef HAL_CAN_MODULE_ENABLED
 #include "peripheral/bxcan.hpp"
@@ -13,5 +13,6 @@
 
 #ifdef HAL_UART_MODULE_ENABLED
 #include "peripheral/uart_dma.hpp"
-#include "peripheral/uart_it.hpp"
+#include "peripheral/uart_interrupt.hpp"
+#include "peripheral/uart_polling.hpp"
 #endif

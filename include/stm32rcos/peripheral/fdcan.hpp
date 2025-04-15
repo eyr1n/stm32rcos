@@ -8,55 +8,55 @@
 #include "stm32rcos/core.hpp"
 #include "stm32rcos/hal.hpp"
 
-#include "can_base.hpp"
+#include "can.hpp"
 
 namespace stm32rcos {
 namespace peripheral {
 
-class FDCAN : public CanBase {
+template <> class Can<CAN_HandleTypeDef> : public CanBase {
 public:
-  FDCAN(FDCAN_HandleTypeDef *hfdcan)
+  Can(FDCAN_HandleTypeDef *hfdcan)
       : hfdcan_{hfdcan}, std_rx_queues_(hfdcan_->Init.StdFiltersNbr, nullptr),
         ext_rx_queues_(hfdcan_->Init.ExtFiltersNbr, nullptr) {
     hal::set_fdcan_context(hfdcan_, this);
-    HAL_FDCAN_RegisterRxFifo0Callback(hfdcan_, [](FDCAN_HandleTypeDef *hfdcan,
-                                                  uint32_t) {
-      static FDCAN_RxHeaderTypeDef rx_header;
-      static CanMessage msg;
+    HAL_FDCAN_RegisterRxFifo0Callback(
+        hfdcan_, [](FDCAN_HandleTypeDef *hfdcan, uint32_t) {
+          static FDCAN_RxHeaderTypeDef rx_header;
+          static CanMessage msg;
 
-      auto fdcan = reinterpret_cast<FDCAN *>(hal::get_fdcan_context(hfdcan));
+          auto fdcan = reinterpret_cast<Can *>(hal::get_fdcan_context(hfdcan));
 
-      while (HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &rx_header,
-                                    msg.data.data()) == HAL_OK) {
-        if (rx_header.IsFilterMatchingFrame == 1) {
-          continue;
-        }
-        if (rx_header.IdType == FDCAN_STANDARD_ID) {
-          if (rx_header.FilterIndex >= fdcan->std_rx_queues_.size()) {
-            continue;
+          while (HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &rx_header,
+                                        msg.data.data()) == HAL_OK) {
+            if (rx_header.IsFilterMatchingFrame == 1) {
+              continue;
+            }
+            if (rx_header.IdType == FDCAN_STANDARD_ID) {
+              if (rx_header.FilterIndex >= fdcan->std_rx_queues_.size()) {
+                continue;
+              }
+              core::Queue<CANMessage> *rx_queue =
+                  fdcan->std_rx_queues_[rx_header.FilterIndex];
+              if (rx_queue) {
+                FDCAN::update_rx_message(msg, rx_header);
+                rx_queue->push(msg, 0);
+              }
+            } else if (rx_header.IdType == FDCAN_EXTENDED_ID) {
+              if (rx_header.FilterIndex >= fdcan->ext_rx_queues_.size()) {
+                continue;
+              }
+              core::Queue<CANMessage> *rx_queue =
+                  fdcan->ext_rx_queues_[rx_header.FilterIndex];
+              if (rx_queue) {
+                FDCAN::update_rx_message(msg, rx_header);
+                rx_queue->push(msg, 0);
+              }
+            }
           }
-          core::Queue<CANMessage> *rx_queue =
-              fdcan->std_rx_queues_[rx_header.FilterIndex];
-          if (rx_queue) {
-            FDCAN::update_rx_message(msg, rx_header);
-            rx_queue->push(msg, 0);
-          }
-        } else if (rx_header.IdType == FDCAN_EXTENDED_ID) {
-          if (rx_header.FilterIndex >= fdcan->ext_rx_queues_.size()) {
-            continue;
-          }
-          core::Queue<CANMessage> *rx_queue =
-              fdcan->ext_rx_queues_[rx_header.FilterIndex];
-          if (rx_queue) {
-            FDCAN::update_rx_message(msg, rx_header);
-            rx_queue->push(msg, 0);
-          }
-        }
-      }
-    });
+        });
   }
 
-  ~FDCAN() override {
+  ~Can() override {
     HAL_FDCAN_UnRegisterRxFifo0Callback(hfdcan_);
     hal::set_fdcan_context(hfdcan_, nullptr);
   }
@@ -154,8 +154,8 @@ private:
   std::vector<core::Queue<CanMessage> *> std_rx_queues_{};
   std::vector<core::Queue<CanMessage> *> ext_rx_queues_{};
 
-  FDCAN(const FDCAN &) = delete;
-  FDCAN &operator=(const FDCAN &) = delete;
+  Can(const Can &) = delete;
+  Can &operator=(const Can &) = delete;
 
   size_t find_std_rx_queue_index(const core::Queue<CANMessage> *queue) {
     return std::distance(

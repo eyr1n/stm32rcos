@@ -8,38 +8,38 @@
 #include "stm32rcos/core.hpp"
 #include "stm32rcos/hal.hpp"
 
-#include "can_base.hpp"
+#include "can.hpp"
 
 namespace stm32rcos {
 namespace peripheral {
 
-class BxCAN : public CanBase {
+template <> class Can<CAN_HandleTypeDef> : public CanBase {
 public:
-  BxCAN(CAN_HandleTypeDef *hcan) : hcan_{hcan} {
+  Can(CAN_HandleTypeDef *hcan) : hcan_{hcan} {
     hal::set_bxcan_context(hcan_, this);
     HAL_CAN_RegisterCallback(
         hcan_, HAL_CAN_RX_FIFO0_MSG_PENDING_CB_ID, [](CAN_HandleTypeDef *hcan) {
           static CAN_RxHeaderTypeDef rx_header;
           static CanMessage msg;
 
-          auto bxcan = reinterpret_cast<BxCAN *>(hal::get_bxcan_context(hcan));
+          auto bxcan = reinterpret_cast<Can *>(hal::get_bxcan_context(hcan));
 
           while (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header,
                                       msg.data.data()) == HAL_OK) {
-            if (rx_header.FilterMatchIndex >= BxCAN::FILTER_BANK_SIZE) {
+            if (rx_header.FilterMatchIndex >= Can::FILTER_BANK_SIZE) {
               continue;
             }
             core::Queue<CanMessage> *rx_queue =
                 bxcan->rx_queues_[rx_header.FilterMatchIndex];
             if (rx_queue) {
-              BxCAN::update_rx_message(msg, rx_header);
+              Can::update_rx_message(msg, rx_header);
               rx_queue->push(msg, 0);
             }
           }
         });
   }
 
-  ~BxCAN() override {
+  ~Can() override {
     HAL_CAN_UnRegisterCallback(hcan_, HAL_CAN_RX_FIFO0_MSG_PENDING_CB_ID);
     hal::set_bxcan_context(hcan_, nullptr);
   }
@@ -111,8 +111,8 @@ private:
   CAN_HandleTypeDef *hcan_;
   std::array<core::Queue<CanMessage> *, FILTER_BANK_SIZE> rx_queues_{};
 
-  BxCAN(const BxCAN &) = delete;
-  BxCAN &operator=(const BxCAN &) = delete;
+  Can(const Can &) = delete;
+  Can &operator=(const Can &) = delete;
 
   size_t find_rx_queue_index(const core::Queue<CanMessage> *queue) {
     return std::distance(
