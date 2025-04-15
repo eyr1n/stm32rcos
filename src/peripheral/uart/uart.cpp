@@ -2,8 +2,6 @@
 #include "stm32rcos/core.hpp"
 #include "stm32rcos/hal.hpp"
 
-#ifdef HAL_UART_MODULE_ENABLED
-
 static stm32rcos::peripheral::UartBase **uart_stdout() {
   static stm32rcos::peripheral::UartBase *uart;
   return &uart;
@@ -35,5 +33,3 @@ extern "C" int _write(int, char *ptr, int len) {
   }
   return -1;
 }
-
-#endif
