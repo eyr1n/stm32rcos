@@ -13,7 +13,9 @@
 namespace stm32rcos {
 namespace peripheral {
 
-template <> class Can<CAN_HandleTypeDef> : public CanBase {
+template <class Handle> class Can;
+
+template <> class Can<CAN_HandleTypeDef *> : public CanBase {
 public:
   Can(CAN_HandleTypeDef *hcan) : hcan_{hcan} {
     hal::set_bxcan_context(hcan_, this);

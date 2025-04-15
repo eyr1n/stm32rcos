@@ -13,6 +13,9 @@ namespace stm32rcos {
 namespace peripheral {
 namespace internal {
 
+template <UartType TxType> class UartTx;
+template <UartType RxType> class UartRx;
+
 template <> class UartTx<UartType::DMA> {
 public:
   UartTx(UART_HandleTypeDef *huart) : huart_{huart} {}

@@ -13,7 +13,9 @@
 namespace stm32rcos {
 namespace peripheral {
 
-template <> class Can<FDCAN_HandleTypeDef> : public CanBase {
+template <class Handle> class Can;
+
+template <> class Can<FDCAN_HandleTypeDef *> : public CanBase {
 public:
   Can(FDCAN_HandleTypeDef *hfdcan)
       : hfdcan_{hfdcan}, std_rx_queues_(hfdcan_->Init.StdFiltersNbr, nullptr),

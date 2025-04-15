@@ -30,9 +30,5 @@ public:
   virtual bool detach_rx_queue(const core::Queue<CanMessage> &queue) = 0;
 };
 
-template <class Handle> class Can;
-
-template <class Handle> Can(Handle *) -> Can<Handle>;
-
 } // namespace peripheral
 } // namespace stm32rcos
