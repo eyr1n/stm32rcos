@@ -2,12 +2,17 @@ cmake_minimum_required(VERSION 3.22)
 
 project(stm32rcos LANGUAGES CXX)
 
+set(DEVICE_SPECIFIC_SOURCES
+  device/bxcan.cpp
+  device/fdcan.cpp
+  device/spi.cpp
+  device/tim.cpp
+  device/uart.cpp
+)
+
 # stm32rcos
 add_library(${PROJECT_NAME} OBJECT
-  src/hal/bxcan.cpp
-  src/hal/spi.cpp
-  src/hal/tim.cpp
-  src/hal/uart.cpp
+  ${DEVICE_SPECIFIC_SOURCES}
   src/peripheral/uart.cpp
 )
 target_link_libraries(${PROJECT_NAME} PUBLIC
@@ -23,6 +28,17 @@ add_library(${PROJECT_NAME}_printf_float INTERFACE)
 add_library(${PROJECT_NAME}::printf_float ALIAS ${PROJECT_NAME}_printf_float)
 target_link_libraries(${PROJECT_NAME}_printf_float INTERFACE
   "-u _printf_float"
+)
+
+# Generate device-specific sources
+find_package(Python REQUIRED COMPONENTS Interpreter)
+add_custom_command(
+  OUTPUT ${DEVICE_SPECIFIC_SOURCES}
+  COMMAND 
+    ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/device_specific_sources.py 
+      ${CMAKE_SOURCE_DIR}/Drivers/CMSIS/Device device
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/device_specific_sources.py
+  VERBATIM
 )
 
 # Doxygen
