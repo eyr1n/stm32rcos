@@ -38,11 +38,11 @@ static void **tim_context(TIM_HandleTypeDef *htim) {
   __builtin_unreachable();
 }
 
-void *stm32rcos::get_tim_context(TIM_HandleTypeDef *htim) {
+void *stm32rcos::hal::get_tim_context(TIM_HandleTypeDef *htim) {
   return *tim_context(htim);
 }
 
-void stm32rcos::set_tim_context(TIM_HandleTypeDef *htim, void *context) {
+void stm32rcos::hal::set_tim_context(TIM_HandleTypeDef *htim, void *context) {
   *tim_context(htim) = context;
 }
 

@@ -3,7 +3,7 @@
 #include "driver.hpp"
 
 namespace stm32rcos {
-// namespace hal {
+namespace hal {
 
 #ifdef HAL_CAN_MODULE_ENABLED
 void *get_bxcan_context(CAN_HandleTypeDef *hcan);
@@ -30,5 +30,5 @@ void *get_uart_context(UART_HandleTypeDef *huart);
 void set_uart_context(UART_HandleTypeDef *huart, void *context);
 #endif
 
-// } // namespace hal
+} // namespace hal
 } // namespace stm32rcos

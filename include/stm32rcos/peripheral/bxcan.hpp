@@ -16,13 +16,13 @@ namespace peripheral {
 class BxCAN : public CANBase {
 public:
   BxCAN(CAN_HandleTypeDef *hcan) : hcan_{hcan} {
-    set_bxcan_context(hcan_, this);
+    hal::set_bxcan_context(hcan_, this);
     HAL_CAN_RegisterCallback(
         hcan_, HAL_CAN_RX_FIFO0_MSG_PENDING_CB_ID, [](CAN_HandleTypeDef *hcan) {
           static CAN_RxHeaderTypeDef rx_header;
           static CANMessage msg;
 
-          auto bxcan = reinterpret_cast<BxCAN *>(get_bxcan_context(hcan));
+          auto bxcan = reinterpret_cast<BxCAN *>(hal::get_bxcan_context(hcan));
 
           while (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header,
                                       msg.data.data()) == HAL_OK) {
@@ -41,7 +41,7 @@ public:
 
   ~BxCAN() override {
     HAL_CAN_UnRegisterCallback(hcan_, HAL_CAN_RX_FIFO0_MSG_PENDING_CB_ID);
-    set_bxcan_context(hcan_, nullptr);
+    hal::set_bxcan_context(hcan_, nullptr);
   }
 
   bool start() override {

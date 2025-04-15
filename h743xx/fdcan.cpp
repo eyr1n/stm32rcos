@@ -14,11 +14,12 @@ static void **fdcan_context(FDCAN_HandleTypeDef *hfdcan) {
   __builtin_unreachable();
 }
 
-void *stm32rcos::get_fdcan_context(FDCAN_HandleTypeDef *hfdcan) {
+void *stm32rcos::hal::get_fdcan_context(FDCAN_HandleTypeDef *hfdcan) {
   return *fdcan_context(hfdcan);
 }
 
-void stm32rcos::set_fdcan_context(FDCAN_HandleTypeDef *hfdcan, void *context) {
+void stm32rcos::hal::set_fdcan_context(FDCAN_HandleTypeDef *hfdcan,
+                                       void *context) {
   *fdcan_context(hfdcan) = context;
 }
 

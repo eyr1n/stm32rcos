@@ -22,11 +22,11 @@ static void **spi_context(SPI_HandleTypeDef *hspi) {
   __builtin_unreachable();
 }
 
-void *stm32rcos::get_spi_context(SPI_HandleTypeDef *hspi) {
+void *stm32rcos::hal::get_spi_context(SPI_HandleTypeDef *hspi) {
   return *spi_context(hspi);
 }
 
-void stm32rcos::set_spi_context(SPI_HandleTypeDef *hspi, void *context) {
+void stm32rcos::hal::set_spi_context(SPI_HandleTypeDef *hspi, void *context) {
   *spi_context(hspi) = context;
 }
 

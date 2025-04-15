@@ -18,11 +18,12 @@ static void **uart_context(UART_HandleTypeDef *huart) {
   __builtin_unreachable();
 }
 
-void *stm32rcos::get_uart_context(UART_HandleTypeDef *huart) {
+void *stm32rcos::hal::get_uart_context(UART_HandleTypeDef *huart) {
   return *uart_context(huart);
 }
 
-void stm32rcos::set_uart_context(UART_HandleTypeDef *huart, void *context) {
+void stm32rcos::hal::set_uart_context(UART_HandleTypeDef *huart,
+                                      void *context) {
   *uart_context(huart) = context;
 }
 

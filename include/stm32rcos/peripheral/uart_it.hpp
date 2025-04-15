@@ -16,10 +16,10 @@ class UART_IT : public UARTBase {
 public:
   UART_IT(UART_HandleTypeDef *huart, size_t rx_queue_size = 64)
       : huart_{huart}, rx_queue_{rx_queue_size} {
-    set_uart_context(huart_, this);
+    hal::set_uart_context(huart_, this);
     HAL_UART_RegisterCallback(
         huart_, HAL_UART_RX_COMPLETE_CB_ID, [](UART_HandleTypeDef *huart) {
-          auto uart = reinterpret_cast<UART_IT *>(get_uart_context(huart));
+          auto uart = reinterpret_cast<UART_IT *>(hal::get_uart_context(huart));
           uart->rx_queue_.push(uart->rx_buf_, 0);
           HAL_UART_Receive_IT(huart, &uart->rx_buf_, 1);
         });
@@ -28,7 +28,7 @@ public:
         [](UART_HandleTypeDef *huart) { HAL_UART_Abort_IT(huart); });
     HAL_UART_RegisterCallback(
         huart_, HAL_UART_ABORT_COMPLETE_CB_ID, [](UART_HandleTypeDef *huart) {
-          auto uart = reinterpret_cast<UART_IT *>(get_uart_context(huart));
+          auto uart = reinterpret_cast<UART_IT *>(hal::get_uart_context(huart));
           HAL_UART_Receive_IT(huart, &uart->rx_buf_, 1);
         });
     HAL_UART_Receive_IT(huart, &rx_buf_, 1);
@@ -39,7 +39,7 @@ public:
     HAL_UART_UnRegisterCallback(huart_, HAL_UART_RX_COMPLETE_CB_ID);
     HAL_UART_UnRegisterCallback(huart_, HAL_UART_ERROR_CB_ID);
     HAL_UART_UnRegisterCallback(huart_, HAL_UART_ABORT_COMPLETE_CB_ID);
-    set_uart_context(huart_, nullptr);
+    hal::set_uart_context(huart_, nullptr);
   }
 
   bool transmit(const uint8_t *data, size_t size, uint32_t timeout) override {

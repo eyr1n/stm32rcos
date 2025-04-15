@@ -14,11 +14,11 @@ static void **bxcan_context(CAN_HandleTypeDef *hcan) {
   __builtin_unreachable();
 }
 
-void *stm32rcos::get_bxcan_context(CAN_HandleTypeDef *hcan) {
+void *stm32rcos::hal::get_bxcan_context(CAN_HandleTypeDef *hcan) {
   return *bxcan_context(hcan);
 }
 
-void stm32rcos::set_bxcan_context(CAN_HandleTypeDef *hcan, void *context) {
+void stm32rcos::hal::set_bxcan_context(CAN_HandleTypeDef *hcan, void *context) {
   *bxcan_context(hcan) = context;
 }
 
