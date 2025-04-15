@@ -39,7 +39,7 @@ private:
 
 template <> class UartRx<UartType::DMA> {
 public:
-  UartRx(UART_HandleTypeDef *huart, size_t rx_buf_size = 64)
+  UartRx(UART_HandleTypeDef *huart, size_t rx_buf_size)
       : huart_{huart}, rx_buf_(rx_buf_size) {
     HAL_UART_Receive_DMA(huart, rx_buf_.data(), rx_buf_.size());
   }
