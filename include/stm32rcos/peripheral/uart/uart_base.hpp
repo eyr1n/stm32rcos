@@ -35,7 +35,7 @@ template <UartType RxType> class UartRx;
 } // namespace internal
 
 template <UartType TxType = UartType::Interrupt,
-          UartType Rx = UartType::Interrupt>
+          UartType RxType = UartType::Interrupt>
 class Uart : public UartBase {
 public:
   Uart(UART_HandleTypeDef *huart, size_t rx_buf_size = 64)
