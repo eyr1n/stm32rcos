@@ -13,7 +13,7 @@ set(DEVICE_SPECIFIC_SOURCES
 # stm32rcos
 add_library(${PROJECT_NAME} OBJECT
   ${DEVICE_SPECIFIC_SOURCES}
-  src/peripheral/uart/uart.cpp
+  src/stdout.cpp
 )
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_23)
 target_link_libraries(${PROJECT_NAME} PUBLIC
