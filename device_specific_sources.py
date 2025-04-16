@@ -8,7 +8,7 @@ def get_defines(src):
     return sorted(set(re.findall(r"^\s*#define\s+(.+?)\s+.+$", headers, re.MULTILINE)))
 
 
-def get_matched_instances(defines, regex):
+def get_matched_defines(defines, regex):
     return list(filter(lambda x: re.match(regex, x), defines))
 
 
@@ -37,7 +37,7 @@ defines = get_defines(src)
 #include "stm32rcos/hal.hpp"
 #ifdef HAL_CAN_MODULE_ENABLED
 static void **bxcan_context(CAN_HandleTypeDef *hcan) {{
-{declare_contexts("hcan", get_matched_instances(defines, "^CAN[0-9]*$"))}
+{declare_contexts("hcan", get_matched_defines(defines, "^CAN[0-9]*$"))}
   std::unreachable();
 }}
 void *stm32rcos::hal::get_bxcan_context(CAN_HandleTypeDef *hcan) {{
@@ -55,7 +55,7 @@ void stm32rcos::hal::set_bxcan_context(CAN_HandleTypeDef *hcan, void *context) {
 #include "stm32rcos/hal.hpp"
 #ifdef HAL_FDCAN_MODULE_ENABLED
 static void **fdcan_context(FDCAN_HandleTypeDef *hfdcan) {{
-{declare_contexts("hfdcan", get_matched_instances(defines, "^FDCAN[0-9]*$"))}
+{declare_contexts("hfdcan", get_matched_defines(defines, "^FDCAN[0-9]*$"))}
   std::unreachable();
 }}
 void *stm32rcos::hal::get_fdcan_context(FDCAN_HandleTypeDef *hfdcan) {{
@@ -73,7 +73,7 @@ void stm32rcos::hal::set_fdcan_context(FDCAN_HandleTypeDef *hfdcan, void *contex
 #include "stm32rcos/hal.hpp"
 #ifdef HAL_SPI_MODULE_ENABLED
 static void **spi_context(SPI_HandleTypeDef *hspi) {{
-{declare_contexts("hspi", get_matched_instances(defines, "^SPI[0-9]*$"))}
+{declare_contexts("hspi", get_matched_defines(defines, "^SPI[0-9]*$"))}
   std::unreachable();
 }}
 void *stm32rcos::hal::get_spi_context(SPI_HandleTypeDef *hspi) {{
@@ -91,7 +91,7 @@ void stm32rcos::hal::set_spi_context(SPI_HandleTypeDef *hspi, void *context) {{
 #include "stm32rcos/hal.hpp"
 #ifdef HAL_TIM_MODULE_ENABLED
 static void **tim_context(TIM_HandleTypeDef *htim) {{
-{declare_contexts("htim", get_matched_instances(defines, "^TIM[0-9]*$"))}
+{declare_contexts("htim", get_matched_defines(defines, "^TIM[0-9]*$"))}
   std::unreachable();
 }}
 void *stm32rcos::hal::get_tim_context(TIM_HandleTypeDef *htim) {{
@@ -109,7 +109,7 @@ void stm32rcos::hal::set_tim_context(TIM_HandleTypeDef *htim, void *context) {{
 #include "stm32rcos/hal.hpp"
 #ifdef HAL_UART_MODULE_ENABLED
 static void **uart_context(UART_HandleTypeDef *huart) {{
-{declare_contexts("huart", get_matched_instances(defines, "^US?ART[0-9]*$"))}
+{declare_contexts("huart", get_matched_defines(defines, "^US?ART[0-9]*$"))}
   std::unreachable();
 }}
 void *stm32rcos::hal::get_uart_context(UART_HandleTypeDef *huart) {{
