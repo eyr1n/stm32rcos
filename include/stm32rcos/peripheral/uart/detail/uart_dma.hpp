@@ -11,7 +11,7 @@
 
 namespace stm32rcos {
 namespace peripheral {
-namespace internal {
+namespace detail {
 
 template <UartType TxType> class UartTx;
 template <UartType RxType> class UartRx;
@@ -87,6 +87,6 @@ private:
   }
 };
 
-} // namespace internal
+} // namespace detail
 } // namespace peripheral
 } // namespace stm32rcos

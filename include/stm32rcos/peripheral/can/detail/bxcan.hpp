@@ -8,9 +8,9 @@
 #include "stm32rcos/core.hpp"
 #include "stm32rcos/hal.hpp"
 
-#include "can_base.hpp"
-#include "can_filter.hpp"
-#include "can_message.hpp"
+#include "../can_base.hpp"
+#include "../can_filter.hpp"
+#include "../can_message.hpp"
 
 namespace stm32rcos {
 namespace peripheral {

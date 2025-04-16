@@ -7,11 +7,11 @@
 #include "can/can_message.hpp"
 
 #ifdef HAL_CAN_MODULE_ENABLED
-#include "can/bxcan.hpp"
+#include "can/detail/bxcan.hpp"
 #endif
 
 #ifdef HAL_FDCAN_MODULE_ENABLED
-#include "can/fdcan.hpp"
+#include "can/detail/fdcan.hpp"
 #endif
 
 namespace stm32rcos {
