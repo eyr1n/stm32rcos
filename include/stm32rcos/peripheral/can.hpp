@@ -76,7 +76,6 @@ namespace peripheral {
  */
 template <class Handle> class Can : public CanBase {
 public:
-  ~Can() override;
   bool start() override;
   bool stop() override;
   bool transmit(const CanMessage &msg, uint32_t timeout) override;
