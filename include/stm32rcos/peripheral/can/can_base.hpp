@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include "stm32rcos/core.hpp"
+
 #include "can_filter.hpp"
 #include "can_message.hpp"
 
