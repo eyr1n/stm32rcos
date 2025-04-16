@@ -18,13 +18,13 @@ https://eyr1n.github.io/stm32rcos/
 
 ### Timebase Sourceの切り替え
 
-- `Pinout & Configuration` -> `System Core` -> `SYS`
+- `Pinout & Configuration` -> `System Core` -> `SYS` を選択
   - `Timebase Source` に空いているハードウェアタイマーを指定
-    - SysTick は RTOS が使用するため
+    - `SysTick` は RTOS が使用するため
 
 ### CMSIS-RTOS2 の有効化、`main_thread` の設定
 
-- `Pinout & Configuration` -> `Middleware and Software Packs` -> `FREERTOS`
+- `Pinout & Configuration` -> `Middleware and Software Packs` -> `FREERTOS` を選択
   - `Interface` に `CMSIS_V2` を指定する
   - `Advanced settings` -> `USE_NEWLIB_REENTRANT` を `Enabled` にする
   - `Tasks and Queues` -> `defaultTask` を以下のように設定する
@@ -34,13 +34,12 @@ https://eyr1n.github.io/stm32rcos/
 
 ### プロジェクト設定
 
-- `Project Manager`
-  - `Project`
-    - `Project Settings` -> `Toolchain / IDE` に `CMake` を指定する
-    - `Thread safe Settings` -> `Enable multi-threaded support` にチェックを入れる
-  - `Advanced Settings` -> `Register Callback`
-    - `CAN` または `FDCAN` を `ENABLE` にする
-    - `UART` を `ENABLE` にする
+- `Project Manager` -> `Project` を選択
+  - `Project Settings` -> `Toolchain / IDE` に `CMake` を指定する
+  - `Thread safe Settings` -> `Enable multi-threaded support` にチェックを入れる
+- `Project Manager` -> `Advanced Settings` を選択
+  - `Register Callback` -> `CAN` または `FDCAN` を `ENABLE` にする
+  - `Register Callback` -> `UART` を `ENABLE` にする
 
 
 ### プロジェクトにライブラリを追加
