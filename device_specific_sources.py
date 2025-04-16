@@ -5,7 +5,7 @@ from pathlib import Path
 
 def get_defines(src):
     headers = "\n".join(map(lambda header: header.read_text(), src.glob("**/*.h")))
-    return sorted(set(re.findall(r"^\s*#define\s+(.+?)\s+.+$", headers, re.MULTILINE)))
+    return sorted(set(re.findall(r"^\s*#define\s+(.+?)\s*", headers, re.MULTILINE)))
 
 
 def get_matched_defines(defines, regex):
