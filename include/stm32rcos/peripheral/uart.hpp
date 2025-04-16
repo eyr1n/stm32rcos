@@ -25,6 +25,40 @@ template <UartType RxType> class UartRx;
 
 } // namespace detail
 
+/**
+ * デフォルトでTx, Rxともに割り込みを使用します。
+ *
+ * @code{.cpp}
+ * #include <cstdio>
+ * #include <stm32rcos/core.hpp>
+ * #include <stm32rcos/hal.hpp>
+ * #include <stm32rcos/peripheral.hpp>
+ *
+ * extern UART_HandleTypeDef huart2;
+ *
+ * extern "C" void main_thread(void *) {
+ *   using namespace stm32rcos::core;
+ *   using namespace stm32rcos::peripheral;
+ *
+ *   Uart uart2(&huart2);
+ *   enable_stdout(uart2);
+ *
+ *   while (true) {
+ *     // 7バイト送信
+ *     uint8_t data[] = {'h', 'e', 'l', 'l', 'o', '\r', '\n'};
+ *     uart2.transmit(data, sizeof(data), osWaitForever);
+ *
+ *     // 1バイト受信
+ *     char c;
+ *     if (uart2.receive((uint8_t *)&c, 1, osWaitForever)) {
+ *       printf("入力した文字: %c\r\n", c);
+ *     }
+ *
+ *     osDelay(10);
+ *   }
+ * }
+ * @endcode
+ */
 template <UartType TxType = UartType::IT, UartType RxType = UartType::IT>
 class Uart : public UartBase {
 public:
