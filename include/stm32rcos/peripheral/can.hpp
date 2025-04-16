@@ -53,7 +53,7 @@ namespace peripheral {
  *       .id = 0x3,
  *       .ide = false,
  *       .dlc = 1,
- *       .data = {},
+ *       .data = {0x0},
  *   };
  *
  *   for (int i = 0; i < 10; ++i) {
