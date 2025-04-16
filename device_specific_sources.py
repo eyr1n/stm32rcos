@@ -33,11 +33,12 @@ defines = get_defines(src)
 
 
 # BxCAN
-(dest / "bxcan.cpp").write_text(f"""#include "stm32rcos/hal.hpp"
+(dest / "bxcan.cpp").write_text(f"""#include <utility>
+#include "stm32rcos/hal.hpp"
 #ifdef HAL_CAN_MODULE_ENABLED
 static void **bxcan_context(CAN_HandleTypeDef *hcan) {{
 {declare_contexts("hcan", get_matched_instances(defines, "^CAN[0-9]*$"))}
-  __builtin_unreachable();
+  std::unreachable();
 }}
 void *stm32rcos::hal::get_bxcan_context(CAN_HandleTypeDef *hcan) {{
   return *bxcan_context(hcan);
@@ -50,11 +51,12 @@ void stm32rcos::hal::set_bxcan_context(CAN_HandleTypeDef *hcan, void *context) {
 
 
 # FDCAN
-(dest / "fdcan.cpp").write_text(f"""#include "stm32rcos/hal.hpp"
+(dest / "fdcan.cpp").write_text(f"""#include <utility>
+#include "stm32rcos/hal.hpp"
 #ifdef HAL_FDCAN_MODULE_ENABLED
 static void **fdcan_context(FDCAN_HandleTypeDef *hfdcan) {{
 {declare_contexts("hfdcan", get_matched_instances(defines, "^FDCAN[0-9]*$"))}
-  __builtin_unreachable();
+  std::unreachable();
 }}
 void *stm32rcos::hal::get_fdcan_context(FDCAN_HandleTypeDef *hfdcan) {{
   return *fdcan_context(hfdcan);
@@ -67,11 +69,12 @@ void stm32rcos::hal::set_fdcan_context(FDCAN_HandleTypeDef *hfdcan, void *contex
 
 
 # SPI
-(dest / "spi.cpp").write_text(f"""#include "stm32rcos/hal.hpp"
+(dest / "spi.cpp").write_text(f"""#include <utility>
+#include "stm32rcos/hal.hpp"
 #ifdef HAL_SPI_MODULE_ENABLED
 static void **spi_context(SPI_HandleTypeDef *hspi) {{
 {declare_contexts("hspi", get_matched_instances(defines, "^SPI[0-9]*$"))}
-  __builtin_unreachable();
+  std::unreachable();
 }}
 void *stm32rcos::hal::get_spi_context(SPI_HandleTypeDef *hspi) {{
   return *spi_context(hspi);
@@ -84,11 +87,12 @@ void stm32rcos::hal::set_spi_context(SPI_HandleTypeDef *hspi, void *context) {{
 
 
 # TIM
-(dest / "tim.cpp").write_text(f"""#include "stm32rcos/hal.hpp"
+(dest / "tim.cpp").write_text(f"""#include <utility>
+#include "stm32rcos/hal.hpp"
 #ifdef HAL_TIM_MODULE_ENABLED
 static void **tim_context(TIM_HandleTypeDef *htim) {{
 {declare_contexts("htim", get_matched_instances(defines, "^TIM[0-9]*$"))}
-  __builtin_unreachable();
+  std::unreachable();
 }}
 void *stm32rcos::hal::get_tim_context(TIM_HandleTypeDef *htim) {{
   return *tim_context(htim);
@@ -101,11 +105,12 @@ void stm32rcos::hal::set_tim_context(TIM_HandleTypeDef *htim, void *context) {{
 
 
 # UART
-(dest / "uart.cpp").write_text(f"""#include "stm32rcos/hal.hpp"
+(dest / "uart.cpp").write_text(f"""#include <utility>
+#include "stm32rcos/hal.hpp"
 #ifdef HAL_UART_MODULE_ENABLED
 static void **uart_context(UART_HandleTypeDef *huart) {{
 {declare_contexts("huart", get_matched_instances(defines, "^US?ART[0-9]*$"))}
-  __builtin_unreachable();
+  std::unreachable();
 }}
 void *stm32rcos::hal::get_uart_context(UART_HandleTypeDef *huart) {{
   return *uart_context(huart);
