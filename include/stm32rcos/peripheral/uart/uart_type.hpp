@@ -1,13 +1,13 @@
 #pragma once
 
-#include "uart_base.hpp"
-
 namespace stm32rcos {
 namespace peripheral {
 
-bool enable_stdout(UartBase &uart);
-
-bool disable_stdout();
+enum class UartType {
+  POLL,
+  IT,
+  DMA,
+};
 
 } // namespace peripheral
 } // namespace stm32rcos

@@ -1,23 +1,12 @@
 #pragma once
 
-#include <array>
 #include <cstdint>
+
+#include "can_filter.hpp"
+#include "can_message.hpp"
 
 namespace stm32rcos {
 namespace peripheral {
-
-struct CanFilter {
-  uint32_t id;
-  uint32_t mask;
-  bool ide;
-};
-
-struct CanMessage {
-  uint32_t id;
-  bool ide;
-  uint8_t dlc;
-  std::array<uint8_t, 8> data;
-};
 
 class CanBase {
 public:

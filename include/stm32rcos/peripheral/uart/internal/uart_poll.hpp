@@ -5,7 +5,7 @@
 
 #include "stm32rcos/hal.hpp"
 
-#include "../uart.hpp"
+#include "../uart_type.hpp"
 
 namespace stm32rcos {
 namespace peripheral {

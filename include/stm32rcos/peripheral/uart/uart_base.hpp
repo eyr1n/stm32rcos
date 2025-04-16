@@ -6,12 +6,6 @@
 namespace stm32rcos {
 namespace peripheral {
 
-enum class UartType {
-  POLL,
-  IT,
-  DMA,
-};
-
 class UartBase {
 public:
   virtual ~UartBase() {}

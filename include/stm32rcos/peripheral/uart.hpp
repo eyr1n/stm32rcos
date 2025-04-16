@@ -6,7 +6,8 @@
 #include "stm32rcos/hal.hpp"
 
 #include "uart/stdout.hpp"
-#include "uart/uart.hpp"
+#include "uart/uart_base.hpp"
+#include "uart/uart_type.hpp"
 
 #ifdef HAL_UART_MODULE_ENABLED
 #include "uart/internal/uart_dma.hpp"
