@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include <FreeRTOS.h>
+
 #include <task.h>
 
 namespace stm32rcos {
