@@ -44,14 +44,14 @@ private:
 
 template <> class UartRx<UartType::IT> {
 public:
-  UartRx(UART_HandleTypeDef *huart, size_t rx_buf_size)
-      : huart_{huart}, rx_queue_{rx_buf_size} {
+  UartRx(UART_HandleTypeDef *huart, size_t buf_size)
+      : huart_{huart}, queue_{buf_size} {
     hal::set_uart_context(huart_, this);
     HAL_UART_RegisterCallback(
         huart_, HAL_UART_RX_COMPLETE_CB_ID, [](UART_HandleTypeDef *huart) {
           auto uart = reinterpret_cast<UartRx *>(hal::get_uart_context(huart));
-          uart->rx_queue_.push(uart->rx_buf_, 0);
-          HAL_UART_Receive_IT(huart, &uart->rx_buf_, 1);
+          uart->queue_.push(uart->buf_, 0);
+          HAL_UART_Receive_IT(huart, &uart->buf_, 1);
         });
     HAL_UART_RegisterCallback(
         huart_, HAL_UART_ERROR_CB_ID,
@@ -59,9 +59,9 @@ public:
     HAL_UART_RegisterCallback(
         huart_, HAL_UART_ABORT_COMPLETE_CB_ID, [](UART_HandleTypeDef *huart) {
           auto uart = reinterpret_cast<UartRx *>(hal::get_uart_context(huart));
-          HAL_UART_Receive_IT(huart, &uart->rx_buf_, 1);
+          HAL_UART_Receive_IT(huart, &uart->buf_, 1);
         });
-    HAL_UART_Receive_IT(huart, &rx_buf_, 1);
+    HAL_UART_Receive_IT(huart, &buf_, 1);
   }
 
   ~UartRx() {
@@ -74,26 +74,26 @@ public:
 
   bool receive(uint8_t *data, size_t size, uint32_t timeout) {
     core::TimeoutHelper timeout_helper;
-    while (rx_queue_.size() < size) {
+    while (queue_.size() < size) {
       if (timeout_helper.is_timeout(timeout)) {
         return false;
       }
       osDelay(1);
     }
     for (size_t i = 0; i < size; ++i) {
-      rx_queue_.pop(data[i], 0);
+      queue_.pop(data[i], 0);
     }
     return true;
   }
 
-  void flush() { rx_queue_.clear(); }
+  void flush() { queue_.clear(); }
 
-  size_t available() { return rx_queue_.size(); }
+  size_t available() { return queue_.size(); }
 
 private:
   UART_HandleTypeDef *huart_;
-  core::Queue<uint8_t> rx_queue_;
-  uint8_t rx_buf_;
+  core::Queue<uint8_t> queue_;
+  uint8_t buf_;
 
   UartRx(const UartRx &) = delete;
   UartRx &operator=(const UartRx &) = delete;

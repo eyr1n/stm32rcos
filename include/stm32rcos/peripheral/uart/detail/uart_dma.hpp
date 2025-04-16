@@ -45,9 +45,9 @@ private:
 
 template <> class UartRx<UartType::DMA> {
 public:
-  UartRx(UART_HandleTypeDef *huart, size_t rx_buf_size)
-      : huart_{huart}, rx_buf_(rx_buf_size) {
-    HAL_UART_Receive_DMA(huart, rx_buf_.data(), rx_buf_.size());
+  UartRx(UART_HandleTypeDef *huart, size_t buf_size)
+      : huart_{huart}, buf_(buf_size) {
+    HAL_UART_Receive_DMA(huart, buf_.data(), buf_.size());
   }
 
   ~UartRx() { HAL_UART_Abort_IT(huart_); }
@@ -61,7 +61,7 @@ public:
       osDelay(1);
     }
     for (size_t i = 0; i < size; ++i) {
-      data[i] = rx_buf_[rx_read_idx_];
+      data[i] = buf_[read_idx_];
       advance(1);
     }
     return true;
@@ -70,21 +70,19 @@ public:
   void flush() { advance(available()); }
 
   size_t available() {
-    size_t write_idx = rx_buf_.size() - __HAL_DMA_GET_COUNTER(huart_->hdmarx);
-    return (rx_buf_.size() + write_idx - rx_read_idx_) % rx_buf_.size();
+    size_t write_idx = buf_.size() - __HAL_DMA_GET_COUNTER(huart_->hdmarx);
+    return (buf_.size() + write_idx - read_idx_) % buf_.size();
   }
 
 private:
   UART_HandleTypeDef *huart_;
-  std::vector<uint8_t> rx_buf_;
-  size_t rx_read_idx_ = 0;
+  std::vector<uint8_t> buf_;
+  size_t read_idx_ = 0;
 
   UartRx(const UartRx &) = delete;
   UartRx &operator=(const UartRx &) = delete;
 
-  void advance(size_t len) {
-    rx_read_idx_ = (rx_read_idx_ + len) % rx_buf_.size();
-  }
+  void advance(size_t len) { read_idx_ = (read_idx_ + len) % buf_.size(); }
 };
 
 } // namespace detail
