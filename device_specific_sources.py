@@ -68,6 +68,24 @@ void stm32rcos::hal::set_fdcan_context(FDCAN_HandleTypeDef *hfdcan, void *contex
 """)
 
 
+# I2C
+(dest / "i2c.cpp").write_text(f"""#include <utility>
+#include "stm32rcos/hal.hpp"
+#ifdef HAL_I2C_MODULE_ENABLED
+static void **i2c_context(I2C_HandleTypeDef *hi2c) {{
+{declare_contexts("hi2c", get_matched_defines(defines, r"^I2C[0-9]*$"))}
+  std::unreachable();
+}}
+void *stm32rcos::hal::get_i2c_context(I2C_HandleTypeDef *hi2c) {{
+  return *i2c_context(hi2c);
+}}
+void stm32rcos::hal::set_i2c_context(I2C_HandleTypeDef *hi2c, void *context) {{
+  *i2c_context(hi2c) = context;
+}}
+#endif
+""")
+
+
 # SPI
 (dest / "spi.cpp").write_text(f"""#include <utility>
 #include "stm32rcos/hal.hpp"

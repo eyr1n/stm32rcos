@@ -5,6 +5,7 @@ project(stm32rcos LANGUAGES CXX)
 set(DEVICE_SPECIFIC_SOURCES
   ${CMAKE_CURRENT_BINARY_DIR}/device/bxcan.cpp
   ${CMAKE_CURRENT_BINARY_DIR}/device/fdcan.cpp
+  ${CMAKE_CURRENT_BINARY_DIR}/device/i2c.cpp
   ${CMAKE_CURRENT_BINARY_DIR}/device/spi.cpp
   ${CMAKE_CURRENT_BINARY_DIR}/device/tim.cpp
   ${CMAKE_CURRENT_BINARY_DIR}/device/uart.cpp
@@ -15,7 +16,7 @@ find_package(Python REQUIRED COMPONENTS Interpreter)
 add_custom_command(
   OUTPUT ${DEVICE_SPECIFIC_SOURCES}
   COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/device_specific_sources.py 
-    ${CMAKE_SOURCE_DIR}/Drivers/CMSIS/Device device
+    ${CMAKE_SOURCE_DIR}/Drivers/CMSIS/Device/ST device
   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/device_specific_sources.py
   VERBATIM
 )

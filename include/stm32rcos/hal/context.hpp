@@ -15,6 +15,11 @@ void *get_fdcan_context(FDCAN_HandleTypeDef *hfdcan);
 void set_fdcan_context(FDCAN_HandleTypeDef *hfdcan, void *context);
 #endif
 
+#ifdef HAL_I2C_MODULE_ENABLED
+void *get_i2c_context(I2C_HandleTypeDef *hi2c);
+void set_i2c_context(I2C_HandleTypeDef *hi2c, void *context);
+#endif
+
 #ifdef HAL_SPI_MODULE_ENABLED
 void *get_spi_context(SPI_HandleTypeDef *hspi);
 void set_spi_context(SPI_HandleTypeDef *hspi, void *context);
