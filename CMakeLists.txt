@@ -23,6 +23,7 @@ add_custom_target(${PROJECT_NAME}_device DEPENDS ${DEVICE_SPECIFIC_SOURCES})
 
 # stm32rcos
 add_library(${PROJECT_NAME} INTERFACE)
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_device)
 target_sources(${PROJECT_NAME} INTERFACE
   ${DEVICE_SPECIFIC_SOURCES}
   src/stdout.cpp
@@ -33,7 +34,6 @@ target_compile_features(${PROJECT_NAME} INTERFACE
 target_include_directories(${PROJECT_NAME} INTERFACE
   include
 )
-add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_device)
 
 # stm32rcos::printf_float
 add_library(${PROJECT_NAME}_printf_float INTERFACE)
