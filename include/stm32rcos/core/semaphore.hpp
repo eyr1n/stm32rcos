@@ -25,11 +25,11 @@ public:
     semaphore_id_ = SemaphoreId{osSemaphoreNew(max, initial, &attr)};
   }
 
-  bool try_acquire(uint32_t timeout) {
+  bool acquire(uint32_t timeout) {
     return osSemaphoreAcquire(semaphore_id_.get(), timeout) == osOK;
   }
 
-  void acquire() { try_acquire(osWaitForever); }
+  void acquire() { acquire(osWaitForever); }
 
   void release() { osSemaphoreRelease(semaphore_id_.get()); }
 

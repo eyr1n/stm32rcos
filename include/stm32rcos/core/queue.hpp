@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <type_traits>
 
 #include <cmsis_os2.h>
@@ -32,15 +33,31 @@ public:
     return osMessageQueuePut(queue_id_.get(), &value, 0, timeout) == osOK;
   }
 
+  bool push(const T &value) { return push(value, 0); }
+
+  std::optional<T> pop(uint32_t timeout) {
+    T value;
+    if (osMessageQueueGet(queue_id_.get(), &value, nullptr, timeout) != osOK) {
+      return std::nullopt;
+    }
+    return value;
+  }
+
+  std::optional<T> pop() { return pop(0); }
+
   bool pop(T &value, uint32_t timeout) {
-    return osMessageQueueGet(queue_id_.get(), &value, nullptr, timeout) == osOK;
+    if (auto a = pop(timeout)) {
+      value = *a;
+      return true;
+    }
+    return false;
   }
 
   void clear() { osMessageQueueReset(queue_id_.get()); }
 
-  size_t size() { return osMessageQueueGetCount(queue_id_.get()); }
+  size_t size() const { return osMessageQueueGetCount(queue_id_.get()); }
 
-  size_t capacity() { return osMessageQueueGetCapacity(queue_id_.get()); }
+  size_t capacity() const { return osMessageQueueGetCapacity(queue_id_.get()); }
 
 private:
   QueueId queue_id_;
