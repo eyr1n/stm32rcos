@@ -4,7 +4,6 @@
 
 - STM32CubeCLT 1.18.0
 - STM32CubeMX 6.14.0
-- Python 3.12.3
 
 で開発・動作確認しています。
 

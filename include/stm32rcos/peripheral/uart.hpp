@@ -20,8 +20,8 @@ namespace peripheral {
 
 namespace detail {
 
-template <auto *Handle, UartType TxType> class UartTx;
-template <auto *Handle, UartType RxType> class UartRx;
+template <UART_HandleTypeDef *Handle, UartType TxType> class UartTx;
+template <UART_HandleTypeDef *Handle, UartType RxType> class UartRx;
 
 } // namespace detail
 
@@ -59,7 +59,7 @@ template <auto *Handle, UartType RxType> class UartRx;
  * }
  * @endcode
  */
-template <auto *Handle, UartType TxType = UartType::IT,
+template <UART_HandleTypeDef *Handle, UartType TxType = UartType::IT,
           UartType RxType = UartType::IT>
 class Uart : public UartBase {
 public:

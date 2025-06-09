@@ -14,10 +14,10 @@ namespace stm32rcos {
 namespace peripheral {
 namespace detail {
 
-template <auto *Handle, UartType TxType> class UartTx;
-template <auto *Handle, UartType RxType> class UartRx;
+template <UART_HandleTypeDef *Handle, UartType TxType> class UartTx;
+template <UART_HandleTypeDef *Handle, UartType RxType> class UartRx;
 
-template <auto *Handle> class UartTx<Handle, UartType::DMA> {
+template <UART_HandleTypeDef *Handle> class UartTx<Handle, UartType::DMA> {
 public:
   UartTx() = default;
 
@@ -42,7 +42,7 @@ private:
   UartTx &operator=(const UartTx &) = delete;
 };
 
-template <auto *Handle> class UartRx<Handle, UartType::DMA> {
+template <UART_HandleTypeDef *Handle> class UartRx<Handle, UartType::DMA> {
 public:
   UartRx(size_t buf_size) : buf_(buf_size) {
     HAL_UART_Receive_DMA(Handle, buf_.data(), buf_.size());

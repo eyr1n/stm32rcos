@@ -14,10 +14,10 @@ namespace stm32rcos {
 namespace peripheral {
 namespace detail {
 
-template <auto *Handle, UartType TxType> class UartTx;
-template <auto *Handle, UartType RxType> class UartRx;
+template <UART_HandleTypeDef *Handle, UartType TxType> class UartTx;
+template <UART_HandleTypeDef *Handle, UartType RxType> class UartRx;
 
-template <auto *Handle> class UartTx<Handle, UartType::IT> {
+template <UART_HandleTypeDef *Handle> class UartTx<Handle, UartType::IT> {
 public:
   UartTx() = default;
 
@@ -42,7 +42,7 @@ private:
   UartTx &operator=(const UartTx &) = delete;
 };
 
-template <auto *Handle> class UartRx<Handle, UartType::IT> {
+template <UART_HandleTypeDef *Handle> class UartRx<Handle, UartType::IT> {
 public:
   UartRx(size_t buf_size) : queue_{buf_size} {
     stm32cubemx_helper::set_context<Handle, UartRx>(this);
