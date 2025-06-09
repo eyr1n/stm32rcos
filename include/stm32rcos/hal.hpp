@@ -1,4 +1,3 @@
 #pragma once
 
-#include "hal/context.hpp"
-#include "hal/device.hpp"
+#include <stm32cubemx_helper/device.hpp>

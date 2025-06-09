@@ -4,8 +4,9 @@
 #include <cstdint>
 #include <vector>
 
+#include <stm32cubemx_helper/device.hpp>
+
 #include "stm32rcos/core.hpp"
-#include "stm32rcos/hal.hpp"
 
 #include "../uart_type.hpp"
 
@@ -13,22 +14,22 @@ namespace stm32rcos {
 namespace peripheral {
 namespace detail {
 
-template <UartType TxType> class UartTx;
-template <UartType RxType> class UartRx;
+template <auto *Handle, UartType TxType> class UartTx;
+template <auto *Handle, UartType RxType> class UartRx;
 
-template <> class UartTx<UartType::DMA> {
+template <auto *Handle> class UartTx<Handle, UartType::DMA> {
 public:
-  UartTx(UART_HandleTypeDef *huart) : huart_{huart} {}
+  UartTx() = default;
 
   bool transmit(const uint8_t *data, size_t size, uint32_t timeout) {
-    if (HAL_UART_Transmit_DMA(huart_, data, size) != HAL_OK) {
-      HAL_UART_AbortTransmit_IT(huart_);
+    if (HAL_UART_Transmit_DMA(Handle, data, size) != HAL_OK) {
+      HAL_UART_AbortTransmit_IT(Handle);
       return false;
     }
     core::TimeoutHelper timeout_helper;
-    while (huart_->gState != HAL_UART_STATE_READY) {
+    while (Handle->gState != HAL_UART_STATE_READY) {
       if (timeout_helper.is_timeout(timeout)) {
-        HAL_UART_AbortTransmit_IT(huart_);
+        HAL_UART_AbortTransmit_IT(Handle);
         return false;
       }
       osDelay(1);
@@ -37,20 +38,17 @@ public:
   }
 
 private:
-  UART_HandleTypeDef *huart_;
-
   UartTx(const UartTx &) = delete;
   UartTx &operator=(const UartTx &) = delete;
 };
 
-template <> class UartRx<UartType::DMA> {
+template <auto *Handle> class UartRx<Handle, UartType::DMA> {
 public:
-  UartRx(UART_HandleTypeDef *huart, size_t buf_size)
-      : huart_{huart}, buf_(buf_size) {
-    HAL_UART_Receive_DMA(huart, buf_.data(), buf_.size());
+  UartRx(size_t buf_size) : buf_(buf_size) {
+    HAL_UART_Receive_DMA(Handle, buf_.data(), buf_.size());
   }
 
-  ~UartRx() { HAL_UART_Abort_IT(huart_); }
+  ~UartRx() { HAL_UART_Abort_IT(Handle); }
 
   bool receive(uint8_t *data, size_t size, uint32_t timeout) {
     core::TimeoutHelper timeout_helper;
@@ -70,12 +68,11 @@ public:
   void flush() { advance(available()); }
 
   size_t available() {
-    size_t write_idx = buf_.size() - __HAL_DMA_GET_COUNTER(huart_->hdmarx);
+    size_t write_idx = buf_.size() - __HAL_DMA_GET_COUNTER(Handle->hdmarx);
     return (buf_.size() + write_idx - read_idx_) % buf_.size();
   }
 
 private:
-  UART_HandleTypeDef *huart_;
   std::vector<uint8_t> buf_;
   size_t read_idx_ = 0;
 

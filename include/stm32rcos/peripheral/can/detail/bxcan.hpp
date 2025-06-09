@@ -5,8 +5,10 @@
 #include <cstdint>
 #include <iterator>
 
+#include <stm32cubemx_helper/context.hpp>
+#include <stm32cubemx_helper/device.hpp>
+
 #include "stm32rcos/core.hpp"
-#include "stm32rcos/hal.hpp"
 
 #include "../can_base.hpp"
 #include "../can_filter.hpp"
@@ -15,18 +17,20 @@
 namespace stm32rcos {
 namespace peripheral {
 
-template <class Handle> class Can;
+template <auto *Handle, class HandleType> class Can;
 
-template <> class Can<CAN_HandleTypeDef *> : public CanBase {
+template <auto *Handle>
+class Can<Handle, CAN_HandleTypeDef *> : public CanBase {
 public:
-  Can(CAN_HandleTypeDef *hcan) : hcan_{hcan} {
-    hal::set_bxcan_context(hcan_, this);
+  Can() {
+    stm32cubemx_helper::set_context<Handle, Can>(this);
     HAL_CAN_RegisterCallback(
-        hcan_, HAL_CAN_RX_FIFO0_MSG_PENDING_CB_ID, [](CAN_HandleTypeDef *hcan) {
+        Handle, HAL_CAN_RX_FIFO0_MSG_PENDING_CB_ID,
+        [](CAN_HandleTypeDef *hcan) {
           static CAN_RxHeaderTypeDef rx_header;
           static CanMessage msg;
 
-          auto bxcan = reinterpret_cast<Can *>(hal::get_bxcan_context(hcan));
+          auto bxcan = stm32cubemx_helper::get_context<Handle, Can>();
 
           while (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &rx_header,
                                       msg.data.data()) == HAL_OK) {
@@ -44,31 +48,31 @@ public:
   }
 
   ~Can() override {
-    HAL_CAN_UnRegisterCallback(hcan_, HAL_CAN_RX_FIFO0_MSG_PENDING_CB_ID);
-    hal::set_bxcan_context(hcan_, nullptr);
+    HAL_CAN_UnRegisterCallback(Handle, HAL_CAN_RX_FIFO0_MSG_PENDING_CB_ID);
+    stm32cubemx_helper::set_context<Handle, Can>(nullptr);
   }
 
   bool start() override {
-    if (HAL_CAN_ActivateNotification(hcan_, CAN_IT_RX_FIFO0_MSG_PENDING) !=
+    if (HAL_CAN_ActivateNotification(Handle, CAN_IT_RX_FIFO0_MSG_PENDING) !=
         HAL_OK) {
       return false;
     }
-    return HAL_CAN_Start(hcan_) == HAL_OK;
+    return HAL_CAN_Start(Handle) == HAL_OK;
   }
 
   bool stop() override {
-    if (HAL_CAN_Stop(hcan_) != HAL_OK) {
+    if (HAL_CAN_Stop(Handle) != HAL_OK) {
       return false;
     }
-    return HAL_CAN_DeactivateNotification(hcan_, CAN_IT_RX_FIFO0_MSG_PENDING) ==
-           HAL_OK;
+    return HAL_CAN_DeactivateNotification(
+               Handle, CAN_IT_RX_FIFO0_MSG_PENDING) == HAL_OK;
   }
 
   bool transmit(const CanMessage &msg, uint32_t timeout) override {
     CAN_TxHeaderTypeDef tx_header = create_tx_header(msg);
     uint32_t tx_mailbox;
     core::TimeoutHelper timeout_helper;
-    while (HAL_CAN_AddTxMessage(hcan_, &tx_header, msg.data.data(),
+    while (HAL_CAN_AddTxMessage(Handle, &tx_header, msg.data.data(),
                                 &tx_mailbox) != HAL_OK) {
       if (timeout_helper.is_timeout(timeout)) {
         return false;
@@ -85,8 +89,8 @@ public:
       return false;
     }
     CAN_FilterTypeDef filter_config = create_filter_config(
-        filter, rx_queue_index_to_filter_index(hcan_, rx_queue_index));
-    if (HAL_CAN_ConfigFilter(hcan_, &filter_config) != HAL_OK) {
+        filter, rx_queue_index_to_filter_index(Handle, rx_queue_index));
+    if (HAL_CAN_ConfigFilter(Handle, &filter_config) != HAL_OK) {
       return false;
     }
     rx_queues_[rx_queue_index] = &queue;
@@ -100,9 +104,9 @@ public:
     }
     CAN_FilterTypeDef filter_config{};
     filter_config.FilterBank =
-        rx_queue_index_to_filter_index(hcan_, rx_queue_index);
+        rx_queue_index_to_filter_index(Handle, rx_queue_index);
     filter_config.FilterActivation = DISABLE;
-    if (HAL_CAN_ConfigFilter(hcan_, &filter_config) != HAL_OK) {
+    if (HAL_CAN_ConfigFilter(Handle, &filter_config) != HAL_OK) {
       return false;
     }
     rx_queues_[rx_queue_index] = nullptr;
@@ -112,7 +116,6 @@ public:
 private:
   static constexpr uint32_t FILTER_BANK_SIZE = 14;
 
-  CAN_HandleTypeDef *hcan_;
   std::array<core::Queue<CanMessage> *, FILTER_BANK_SIZE> rx_queues_{};
 
   Can(const Can &) = delete;

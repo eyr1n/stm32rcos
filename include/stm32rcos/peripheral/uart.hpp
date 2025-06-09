@@ -20,8 +20,8 @@ namespace peripheral {
 
 namespace detail {
 
-template <UartType TxType> class UartTx;
-template <UartType RxType> class UartRx;
+template <auto *Handle, UartType TxType> class UartTx;
+template <auto *Handle, UartType RxType> class UartRx;
 
 } // namespace detail
 
@@ -40,7 +40,7 @@ template <UartType RxType> class UartRx;
  *   using namespace stm32rcos::core;
  *   using namespace stm32rcos::peripheral;
  *
- *   Uart uart2(&huart2);
+ *   Uart<&huart2> uart2;
  *   enable_stdout(uart2);
  *
  *   while (true) {
@@ -59,11 +59,11 @@ template <UartType RxType> class UartRx;
  * }
  * @endcode
  */
-template <UartType TxType = UartType::IT, UartType RxType = UartType::IT>
+template <auto *Handle, UartType TxType = UartType::IT,
+          UartType RxType = UartType::IT>
 class Uart : public UartBase {
 public:
-  Uart(UART_HandleTypeDef *huart, size_t rx_buf_size = 64)
-      : tx_{huart}, rx_{huart, rx_buf_size} {}
+  Uart(size_t rx_buf_size = 64) : rx_{rx_buf_size} {}
 
   bool transmit(const uint8_t *data, size_t size, uint32_t timeout) {
     return tx_.transmit(data, size, timeout);
@@ -78,8 +78,8 @@ public:
   size_t available() { return rx_.available(); }
 
 private:
-  detail::UartTx<TxType> tx_;
-  detail::UartRx<RxType> rx_;
+  detail::UartTx<Handle, TxType> tx_;
+  detail::UartRx<Handle, RxType> rx_;
 };
 
 } // namespace peripheral

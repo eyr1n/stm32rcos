@@ -5,8 +5,10 @@
 #include <iterator>
 #include <vector>
 
+#include <stm32cubemx_helper/context.hpp>
+#include <stm32cubemx_helper/device.hpp>
+
 #include "stm32rcos/core.hpp"
-#include "stm32rcos/hal.hpp"
 
 #include "../can_base.hpp"
 #include "../can_filter.hpp"
@@ -15,20 +17,21 @@
 namespace stm32rcos {
 namespace peripheral {
 
-template <class Handle> class Can;
+template <auto *Handle, class HandleType> class Can;
 
-template <> class Can<FDCAN_HandleTypeDef *> : public CanBase {
+template <auto *Handle>
+class Can<Handle, FDCAN_HandleTypeDef *> : public CanBase {
 public:
-  Can(FDCAN_HandleTypeDef *hfdcan)
-      : hfdcan_{hfdcan}, std_rx_queues_(hfdcan_->Init.StdFiltersNbr, nullptr),
-        ext_rx_queues_(hfdcan_->Init.ExtFiltersNbr, nullptr) {
-    hal::set_fdcan_context(hfdcan_, this);
+  Can()
+      : std_rx_queues_(Handle->Init.StdFiltersNbr, nullptr),
+        ext_rx_queues_(Handle->Init.ExtFiltersNbr, nullptr) {
+    stm32cubemx_helper::set_context<Handle, Can>(this);
     HAL_FDCAN_RegisterRxFifo0Callback(
-        hfdcan_, [](FDCAN_HandleTypeDef *hfdcan, uint32_t) {
+        Handle, [](FDCAN_HandleTypeDef *hfdcan, uint32_t) {
           static FDCAN_RxHeaderTypeDef rx_header;
           static CanMessage msg;
 
-          auto fdcan = reinterpret_cast<Can *>(hal::get_fdcan_context(hfdcan));
+          auto fdcan = stm32cubemx_helper::get_context<Handle, Can>();
 
           while (HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &rx_header,
                                         msg.data.data()) == HAL_OK) {
@@ -61,36 +64,36 @@ public:
   }
 
   ~Can() override {
-    HAL_FDCAN_UnRegisterRxFifo0Callback(hfdcan_);
-    hal::set_fdcan_context(hfdcan_, nullptr);
+    HAL_FDCAN_UnRegisterRxFifo0Callback(Handle);
+    stm32cubemx_helper::set_context<Handle, Can>(nullptr);
   }
 
   bool start() override {
-    if (HAL_FDCAN_ConfigGlobalFilter(hfdcan_, FDCAN_REJECT, FDCAN_REJECT,
+    if (HAL_FDCAN_ConfigGlobalFilter(Handle, FDCAN_REJECT, FDCAN_REJECT,
                                      FDCAN_REJECT_REMOTE,
                                      FDCAN_REJECT_REMOTE) != HAL_OK) {
       return false;
     }
-    if (HAL_FDCAN_ActivateNotification(hfdcan_, FDCAN_IT_RX_FIFO0_NEW_MESSAGE,
+    if (HAL_FDCAN_ActivateNotification(Handle, FDCAN_IT_RX_FIFO0_NEW_MESSAGE,
                                        0) != HAL_OK) {
       return false;
     }
-    return HAL_FDCAN_Start(hfdcan_) == HAL_OK;
+    return HAL_FDCAN_Start(Handle) == HAL_OK;
   }
 
   bool stop() override {
-    if (HAL_FDCAN_Stop(hfdcan_) != HAL_OK) {
+    if (HAL_FDCAN_Stop(Handle) != HAL_OK) {
       return false;
     }
     return HAL_FDCAN_DeactivateNotification(
-               hfdcan_, FDCAN_IT_RX_FIFO0_NEW_MESSAGE) == HAL_OK;
+               Handle, FDCAN_IT_RX_FIFO0_NEW_MESSAGE) == HAL_OK;
   }
 
   bool transmit(const CanMessage &msg, uint32_t timeout) override {
     FDCAN_TxHeaderTypeDef tx_header = create_tx_header(msg);
     core::TimeoutHelper timeout_helper;
-    while (HAL_FDCAN_AddMessageToTxFifoQ(hfdcan_, &tx_header,
-                                         msg.data.data()) != HAL_OK) {
+    while (HAL_FDCAN_AddMessageToTxFifoQ(Handle, &tx_header, msg.data.data()) !=
+           HAL_OK) {
       if (timeout_helper.is_timeout(timeout)) {
         return false;
       }
@@ -108,7 +111,7 @@ public:
       }
       FDCAN_FilterTypeDef filter_config =
           create_filter_config(filter, rx_queue_index);
-      if (HAL_FDCAN_ConfigFilter(hfdcan_, &filter_config) != HAL_OK) {
+      if (HAL_FDCAN_ConfigFilter(Handle, &filter_config) != HAL_OK) {
         return false;
       }
       ext_rx_queues_[rx_queue_index] = &queue;
@@ -119,7 +122,7 @@ public:
       }
       FDCAN_FilterTypeDef filter_config =
           create_filter_config(filter, rx_queue_index);
-      if (HAL_FDCAN_ConfigFilter(hfdcan_, &filter_config) != HAL_OK) {
+      if (HAL_FDCAN_ConfigFilter(Handle, &filter_config) != HAL_OK) {
         return false;
       }
       std_rx_queues_[rx_queue_index] = &queue;
@@ -133,7 +136,7 @@ public:
       FDCAN_FilterTypeDef filter_config{};
       filter_config.FilterIndex = rx_queue_index;
       filter_config.FilterConfig = FDCAN_FILTER_DISABLE;
-      if (HAL_FDCAN_ConfigFilter(hfdcan_, &filter_config) != HAL_OK) {
+      if (HAL_FDCAN_ConfigFilter(Handle, &filter_config) != HAL_OK) {
         return false;
       }
       std_rx_queues_[rx_queue_index] = nullptr;
@@ -145,7 +148,7 @@ public:
       FDCAN_FilterTypeDef filter_config{};
       filter_config.FilterIndex = rx_queue_index;
       filter_config.FilterConfig = FDCAN_FILTER_DISABLE;
-      if (HAL_FDCAN_ConfigFilter(hfdcan_, &filter_config) != HAL_OK) {
+      if (HAL_FDCAN_ConfigFilter(Handle, &filter_config) != HAL_OK) {
         return false;
       }
       ext_rx_queues_[rx_queue_index] = nullptr;
@@ -154,7 +157,6 @@ public:
   }
 
 private:
-  FDCAN_HandleTypeDef *hfdcan_;
   std::vector<core::Queue<CanMessage> *> std_rx_queues_{};
   std::vector<core::Queue<CanMessage> *> ext_rx_queues_{};
 

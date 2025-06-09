@@ -31,10 +31,10 @@ namespace peripheral {
  *   using namespace stm32rcos::core;
  *   using namespace stm32rcos::peripheral;
  *
- *   Uart uart2(&huart2);
+ *   Uart<&huart2> uart2;
  *   enable_stdout(uart2);
  *
- *   Can can1(&hfdcan1);
+ *   Can<&hfdcan1> can1;
  *
  *   // 受信フィルター、受信キューの設定
  *   CanFilter rx_filter = {
@@ -74,7 +74,8 @@ namespace peripheral {
  * }
  * @endcode
  */
-template <class Handle> class Can : public CanBase {
+template <auto *Handle, class HandleType = decltype(Handle)>
+class Can : public CanBase {
 public:
   bool start() override;
   bool stop() override;
@@ -83,8 +84,6 @@ public:
                        core::Queue<CanMessage> &queue) override;
   bool detach_rx_queue(const core::Queue<CanMessage> &queue) override;
 };
-
-template <class Handle> Can(Handle) -> Can<Handle>;
 
 } // namespace peripheral
 } // namespace stm32rcos
