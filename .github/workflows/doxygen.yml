@@ -32,7 +32,7 @@ jobs:
           cd doxygen-1.13.2
           sudo make install
       - run: |
-          cmake -B build
+          cmake -B build -DCMSIS_DEVICE_HEADER=CMSIS_device_header
           cmake --build build --target docs
       - uses: actions/upload-pages-artifact@v3
         with:
